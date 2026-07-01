@@ -31,6 +31,16 @@
       <div class="card"><div id="map" class="map"></div></div>
       <div class="card">
         <h3>Trip details</h3>
+        {% if ride.driver %}
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+          <img src="{{ ride.driver.avatar }}" alt="" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:1px solid var(--border-strong)" />
+          <div>
+            <strong>{{ ride.driver.name }}</strong>
+            {% if driver_profile %}<div class="muted" style="font-size:.9rem">{{ driver_profile.vehicle_type }} · {{ driver_profile.vehicle_number }}</div>{% endif %}
+          </div>
+          {% if driver_profile %}<img src="{{ driver_profile.vehicle_image }}" alt="" style="width:80px;height:56px;border-radius:8px;object-fit:cover;margin-left:auto" />{% endif %}
+        </div>
+        {% endif %}
         <table>
           <tr><th>Rider</th><td>{{ ride.rider.name }}</td></tr>
           <tr><th>Driver</th><td>{{ ride.driver.name|default:"—" }}</td></tr>

@@ -9,7 +9,13 @@
       <tbody>
         {% for r in riders %}
         <tr>
-          <td>{{ r.name }}</td><td>{{ r.email }}</td><td>{{ r.phone|default:"—" }}</td>
+          <td>
+            <span style="display:inline-flex;align-items:center;gap:10px">
+              <img src="{{ r.avatar }}" alt="" style="width:34px;height:34px;border-radius:50%;object-fit:cover" />
+              {{ r.name }}
+            </span>
+          </td>
+          <td>{{ r.email }}</td><td>{{ r.phone|default:"—" }}</td>
           <td>{{ r.rides_as_rider.count }}</td>
           <td><span class="badge {% if r.status == 'active' %}green{% else %}red{% endif %}">{{ r.get_status_display }}</span></td>
           <td>

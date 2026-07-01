@@ -9,8 +9,18 @@
       <tbody>
         {% for p in profiles %}
         <tr>
-          <td>{{ p.user.name }}<br><span class="muted">{{ p.user.email }}</span></td>
-          <td>{{ p.vehicle_type|default:"—" }}<br><span class="muted">{{ p.vehicle_number }}</span></td>
+          <td>
+            <span style="display:inline-flex;align-items:center;gap:10px">
+              <img src="{{ p.user.avatar }}" alt="" style="width:36px;height:36px;border-radius:50%;object-fit:cover" />
+              <span>{{ p.user.name }}<br><span class="muted">{{ p.user.email }}</span></span>
+            </span>
+          </td>
+          <td>
+            <span style="display:inline-flex;align-items:center;gap:10px">
+              <img src="{{ p.vehicle_image }}" alt="" style="width:52px;height:38px;border-radius:7px;object-fit:cover" />
+              <span>{{ p.vehicle_type|default:"—" }}<br><span class="muted">{{ p.vehicle_number }}</span></span>
+            </span>
+          </td>
           <td>{{ p.license_number|default:"—" }}</td>
           <td>
             {% if p.license_document %}<a href="{{ p.license_document.url }}" target="_blank">Licence</a>{% endif %}

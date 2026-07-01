@@ -3,12 +3,15 @@
 {% block head %}
 <style>
   .driver-card { cursor: pointer; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px;
-    margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 12px;
-    transition: 0.2s var(--ease); background: rgba(7,10,20,0.4); }
-  .driver-card:hover { border-color: var(--border-strong); transform: translateY(-2px); }
-  .driver-card.selected { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(91,139,255,0.2); background: rgba(91,139,255,0.08); }
-  .driver-card .meta { color: var(--muted); font-size: 0.85rem; }
-  .driver-card .pick { color: var(--primary); font-weight: 700; font-size: 0.8rem; opacity: 0; transition: 0.2s; }
+    margin-bottom: 10px; display: flex; align-items: center; gap: 12px;
+    transition: 0.2s var(--ease); background: var(--bg-2); }
+  .driver-card:hover { border-color: var(--border-strong); }
+  .driver-card.selected { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(25,195,125,0.18); background: rgba(25,195,125,0.06); }
+  .driver-card .avatar { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; flex: 0 0 auto; border: 1px solid var(--border-strong); }
+  .driver-card .car { width: 58px; height: 42px; border-radius: 8px; object-fit: cover; flex: 0 0 auto; }
+  .driver-card .info { flex: 1; min-width: 0; }
+  .driver-card .meta { color: var(--muted); font-size: 0.82rem; }
+  .driver-card .pick { color: var(--accent); font-weight: 700; font-size: 0.78rem; opacity: 0; transition: 0.2s; flex: 0 0 auto; }
   .driver-card.selected .pick { opacity: 1; }
   .step-num { display:inline-flex; width:24px; height:24px; border-radius:50%; background:var(--grad-brand);
     color:#fff; font-size:0.8rem; font-weight:700; align-items:center; justify-content:center; margin-right:8px; }
@@ -112,11 +115,13 @@
           const card = document.createElement("div");
           card.className = "driver-card";
           card.innerHTML = `
-            <div>
+            <img class="avatar" src="${dr.avatar}" alt="" />
+            <div class="info">
               <strong>${dr.name}</strong>
-              <div class="meta">${dr.vehicle}${dr.rating ? " · ⭐ " + dr.rating : " · New"}${dr.distance_m ? " · " + (dr.distance_m/1000).toFixed(1) + " km away" : ""}</div>
+              <div class="meta">${dr.vehicle}${dr.rating ? " · ⭐ " + dr.rating : " · New"}${dr.distance_m ? " · " + (dr.distance_m/1000).toFixed(1) + " km" : ""}</div>
             </div>
-            <div class="pick">✔ Selected</div>`;
+            <img class="car" src="${dr.vehicle_image}" alt="" />
+            <div class="pick">✔</div>`;
           card.addEventListener("click", () => selectDriver(dr.id, card));
           el.appendChild(card);
           const m = L.marker([dr.lat, dr.lng]).addTo(map).bindPopup(dr.name);

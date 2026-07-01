@@ -112,6 +112,8 @@ def available_drivers(request):
                 "name": dp.user.name,
                 "vehicle": f"{dp.vehicle_type} · {dp.vehicle_number}",
                 "rating": dp.average_rating,
+                "avatar": dp.user.avatar,
+                "vehicle_image": dp.vehicle_image,
                 "lat": d_lat,
                 "lng": d_lng,
                 "distance_m": round(distance) if distance else None,

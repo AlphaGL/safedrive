@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Rate your trip — SafeDrive{% endblock %}
+{% block content %}
+<div style="max-width:480px;margin:0 auto">
+  <div class="card">
+    <h2>Rate your driver</h2>
+    <p class="muted">{{ ride.driver.name }} · {{ ride.pickup_location }} → {{ ride.destination }}</p>
+    <form method="post">
+      {% csrf_token %}
+      {% include "partials/_form_fields.html" %}
+      <button class="btn btn-block" type="submit">Submit rating</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}SafeDrive{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <div class="bg-aurora"></div>
+  <div class="bg-grid"></div>
+  <nav class="nav">
+    <div class="container nav-inner">
+      <a href="/" class="brand">Safe<span>Drive</span></a>
+      <div class="nav-links">
+        {% if user.is_authenticated %}
+          {% if user.is_platform_admin %}
+            <a href="{% url 'dashboard:admin_home' %}">Dashboard</a>
+            <a href="{% url 'dashboard:emergency_center' %}">Emergency</a>
+            <a href="{% url 'dashboard:driver_management' %}">Drivers</a>
+            <a href="{% url 'dashboard:ride_monitoring' %}">Monitoring</a>
+          {% elif user.is_driver %}
+            <a href="{% url 'rides:driver_dashboard' %}">Dashboard</a>
+            <a href="{% url 'rides:trip_history' %}">History</a>
+            <a href="{% url 'rides:driver_ratings' %}">Ratings</a>
+            <a href="{% url 'accounts:driver_verification' %}">Verification</a>
+          {% else %}
+            <a href="{% url 'rides:rider_dashboard' %}">Dashboard</a>
+            <a href="{% url 'rides:request_ride' %}">Request Ride</a>
+            <a href="{% url 'rides:trip_history' %}">History</a>
+            <a href="{% url 'accounts:trusted_contacts' %}">Trusted Contacts</a>
+          {% endif %}
+          <a href="{% url 'accounts:profile' %}">{{ user.name }}</a>
+          <form method="post" action="{% url 'accounts:logout' %}" style="display:inline">
+            {% csrf_token %}
+            <button class="btn btn-sm btn-outline" type="submit">Logout</button>
+          </form>
+        {% else %}
+          <a href="{% url 'accounts:login' %}">Login</a>
+          <a class="btn btn-sm" href="{% url 'accounts:register' %}">Get started</a>
+        {% endif %}
+      </div>
+    </div>
+  </nav>
+
+  <main class="container section">
+    {% if messages %}
+      <ul class="messages">
+        {% for message in messages %}
+          <li class="{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // Scroll-reveal: animate elements into view as they enter the viewport.
+    (function () {
+      const els = document.querySelectorAll(".reveal");
+      if (!("IntersectionObserver" in window) || !els.length) {
+        els.forEach((e) => e.classList.add("in"));
+        return;
+      }
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) { entry.target.classList.add("in"); io.unobserve(entry.target); }
+        });
+      }, { threshold: 0.12 });
+      els.forEach((e) => io.observe(e));
+    })();
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

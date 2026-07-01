@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Riders — SafeDrive{% endblock %}
+{% block content %}
+<h2>Riders</h2>
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Trips</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for r in riders %}
+        <tr>
+          <td>{{ r.name }}</td><td>{{ r.email }}</td><td>{{ r.phone|default:"—" }}</td>
+          <td>{{ r.rides_as_rider.count }}</td>
+          <td><span class="badge {% if r.status == 'active' %}green{% else %}red{% endif %}">{{ r.get_status_display }}</span></td>
+          <td>
+            <form method="post" action="{% url 'dashboard:toggle_user_suspension' r.pk %}">{% csrf_token %}
+              <button class="btn btn-sm {% if r.status == 'active' %}btn-danger{% else %}btn-success{% endif %}">
+                {% if r.status == 'active' %}Suspend{% else %}Reactivate{% endif %}
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}<tr><td colspan="6" class="muted">No riders.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

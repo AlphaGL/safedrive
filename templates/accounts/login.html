@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Login — SafeDrive{% endblock %}
+{% block content %}
+<div style="max-width:420px;margin:0 auto">
+  <div class="card">
+    <h2>Welcome back</h2>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% include "partials/_form_fields.html" %}
+      <button class="btn btn-block" type="submit">Log in</button>
+    </form>
+    <p class="muted mt center">New here? <a href="{% url 'accounts:register' %}">Create an account</a></p>
+  </div>
+</div>
+{% endblock %}

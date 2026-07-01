@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Trusted Contacts — SafeDrive{% endblock %}
+{% block content %}
+<h2>Trusted contacts</h2>
+<p class="muted">These people are notified instantly if you trigger an SOS, and can view trips you share.</p>
+<div class="grid grid-2">
+  <div class="card">
+    <h3>Add a contact</h3>
+    <form method="post">
+      {% csrf_token %}
+      {% include "partials/_form_fields.html" %}
+      <button class="btn" type="submit">Add contact</button>
+    </form>
+  </div>
+  <div class="card">
+    <h3>Your contacts ({{ contacts|length }})</h3>
+    {% if contacts %}
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th></th></tr></thead>
+          <tbody>
+            {% for c in contacts %}
+            <tr>
+              <td>{{ c.name }}</td><td>{{ c.phone }}</td><td>{{ c.email|default:"—" }}</td>
+              <td>
+                <form method="post" action="{% url 'accounts:delete_trusted_contact' c.pk %}">
+                  {% csrf_token %}
+                  <button class="btn btn-sm btn-danger" type="submit">Remove</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="muted">No contacts yet. Add at least one for your safety.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

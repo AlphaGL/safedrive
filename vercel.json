@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "safedrive/wsgi.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "setup.sh",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "staticfiles_build" }
+    }
+  ],
+  "routes": [
+    { "src": "/static/(.*)", "dest": "/static/$1" },
+    { "src": "/(.*)", "dest": "safedrive/wsgi.py" }
+  ]
+}

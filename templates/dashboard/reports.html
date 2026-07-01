@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Incident Reports — SafeDrive{% endblock %}
+{% block content %}
+<h2>Incident reports</h2>
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Reporter</th><th>Category</th><th>Description</th><th>Trip</th><th>Status</th><th>Date</th><th></th></tr></thead>
+      <tbody>
+        {% for r in reports %}
+        <tr>
+          <td>{{ r.reporter.name }}</td><td>{{ r.category }}</td>
+          <td>{{ r.description|truncatewords:20 }}</td>
+          <td>{% if r.ride %}#{{ r.ride.id }}{% else %}—{% endif %}</td>
+          <td><span class="badge {% if r.resolved %}green{% else %}yellow{% endif %}">{% if r.resolved %}Resolved{% else %}Open{% endif %}</span></td>
+          <td>{{ r.created_at|date:"M d, H:i" }}</td>
+          <td>
+            {% if not r.resolved %}
+            <form method="post" action="{% url 'dashboard:resolve_report' r.pk %}">{% csrf_token %}<button class="btn btn-sm btn-success">Resolve</button></form>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}<tr><td colspan="7" class="muted">No reports.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

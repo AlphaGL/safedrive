@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Request a Ride — SafeDrive{% endblock %}
+{% block head %}
+<style>
+  .driver-card { cursor: pointer; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px;
+    margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    transition: 0.2s var(--ease); background: rgba(7,10,20,0.4); }
+  .driver-card:hover { border-color: var(--border-strong); transform: translateY(-2px); }
+  .driver-card.selected { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(91,139,255,0.2); background: rgba(91,139,255,0.08); }
+  .driver-card .meta { color: var(--muted); font-size: 0.85rem; }
+  .driver-card .pick { color: var(--primary); font-weight: 700; font-size: 0.8rem; opacity: 0; transition: 0.2s; }
+  .driver-card.selected .pick { opacity: 1; }
+  .step-num { display:inline-flex; width:24px; height:24px; border-radius:50%; background:var(--grad-brand);
+    color:#fff; font-size:0.8rem; font-weight:700; align-items:center; justify-content:center; margin-right:8px; }
+</style>
+{% endblock %}
+{% block content %}
+<h2>Request a ride</h2>
+<p class="muted">Set your pickup &amp; destination on the map, then choose a verified driver to book.</p>
+
+<div class="grid grid-2">
+  <div class="card">
+    <form method="post" id="ride-form">
+      {% csrf_token %}
+      <div class="field">
+        <label><span class="step-num">1</span> Pickup location</label>
+        <input type="text" name="pickup_location" id="pickup_location" placeholder="e.g. Ikeja City Mall" required />
+      </div>
+      <div class="field">
+        <label><span class="step-num">2</span> Destination</label>
+        <input type="text" name="destination" id="destination" placeholder="e.g. Lekki Phase 1" required />
+      </div>
+      <div class="row mb">
+        <button type="button" class="btn btn-sm btn-outline" id="set-pickup">📍 Set pickup on map</button>
+        <button type="button" class="btn btn-sm btn-outline" id="set-dest">🏁 Set destination on map</button>
+      </div>
+      {{ form.pickup_lat }}{{ form.pickup_lng }}{{ form.destination_lat }}{{ form.destination_lng }}
+      <input type="hidden" name="driver_id" id="driver_id" />
+      <button class="btn btn-block" type="submit" id="submit-btn" disabled>Pick pickup, destination &amp; a driver</button>
+    </form>
+  </div>
+  <div class="card">
+    <div id="map" class="map map-sm"></div>
+    <div class="mt">
+      <strong><span class="step-num">3</span> Choose a driver</strong>
+      <div id="drivers-list" class="mt"><p class="muted">Set your pickup point to see available drivers.</p></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const map = L.map("map").setView([6.5244, 3.3792], 12); // Lagos
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap" }).addTo(map);
+
+  let mode = null, pickupMarker = null, destMarker = null;
+  let driverMarkers = [];
+  const f = {
+    plat: document.getElementById("id_pickup_lat"), plng: document.getElementById("id_pickup_lng"),
+    dlat: document.getElementById("id_destination_lat"), dlng: document.getElementById("id_destination_lng"),
+    driver: document.getElementById("driver_id"),
+  };
+  const submitBtn = document.getElementById("submit-btn");
+
+  document.getElementById("set-pickup").onclick = () => { mode = "pickup"; };
+  document.getElementById("set-dest").onclick = () => { mode = "dest"; };
+
+  function maybeEnable() {
+    const ready = f.plat.value && f.dlat.value && f.driver.value;
+    submitBtn.disabled = !ready;
+    if (ready) submitBtn.textContent = "Request ride →";
+    else if (f.plat.value && f.dlat.value) submitBtn.textContent = "Choose a driver to book";
+    else submitBtn.textContent = "Pick pickup, destination & a driver";
+  }
+
+  map.on("click", (e) => {
+    const { lat, lng } = e.latlng;
+    if (mode === "pickup") {
+      if (pickupMarker) map.removeLayer(pickupMarker);
+      pickupMarker = L.marker([lat, lng]).addTo(map).bindPopup("Pickup").openPopup();
+      f.plat.value = lat.toFixed(6); f.plng.value = lng.toFixed(6);
+      loadDrivers();
+    } else if (mode === "dest") {
+      if (destMarker) map.removeLayer(destMarker);
+      destMarker = L.marker([lat, lng]).addTo(map).bindPopup("Destination").openPopup();
+      f.dlat.value = lat.toFixed(6); f.dlng.value = lng.toFixed(6);
+    } else {
+      return; // no mode selected yet
+    }
+    maybeEnable();
+  });
+
+  function selectDriver(id, card) {
+    f.driver.value = id;
+    document.querySelectorAll(".driver-card").forEach((c) => c.classList.remove("selected"));
+    card.classList.add("selected");
+    maybeEnable();
+  }
+
+  function loadDrivers() {
+    const el = document.getElementById("drivers-list");
+    el.innerHTML = '<p class="muted">Finding drivers near you…</p>';
+    fetch(`{% url 'rides:available_drivers' %}?lat=${f.plat.value}&lng=${f.plng.value}`)
+      .then((r) => r.json())
+      .then((d) => {
+        driverMarkers.forEach((m) => map.removeLayer(m));
+        driverMarkers = [];
+        if (!d.drivers.length) { el.innerHTML = '<p class="muted">No drivers available nearby right now.</p>'; return; }
+        el.innerHTML = "";
+        d.drivers.forEach((dr) => {
+          const card = document.createElement("div");
+          card.className = "driver-card";
+          card.innerHTML = `
+            <div>
+              <strong>${dr.name}</strong>
+              <div class="meta">${dr.vehicle}${dr.rating ? " · ⭐ " + dr.rating : " · New"}${dr.distance_m ? " · " + (dr.distance_m/1000).toFixed(1) + " km away" : ""}</div>
+            </div>
+            <div class="pick">✔ Selected</div>`;
+          card.addEventListener("click", () => selectDriver(dr.id, card));
+          el.appendChild(card);
+          const m = L.marker([dr.lat, dr.lng]).addTo(map).bindPopup(dr.name);
+          m.on("click", () => selectDriver(dr.id, card));
+          driverMarkers.push(m);
+        });
+      })
+      .catch(() => { el.innerHTML = '<p class="muted">Could not load drivers. Try again.</p>'; });
+  }
+</script>
+{% endblock %}

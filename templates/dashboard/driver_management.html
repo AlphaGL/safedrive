@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Driver Management — SafeDrive{% endblock %}
+{% block content %}
+<h2>Driver management</h2>
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Driver</th><th>Vehicle</th><th>Licence</th><th>Docs</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for p in profiles %}
+        <tr>
+          <td>{{ p.user.name }}<br><span class="muted">{{ p.user.email }}</span></td>
+          <td>{{ p.vehicle_type|default:"—" }}<br><span class="muted">{{ p.vehicle_number }}</span></td>
+          <td>{{ p.license_number|default:"—" }}</td>
+          <td>
+            {% if p.license_document %}<a href="{{ p.license_document.url }}" target="_blank">Licence</a>{% endif %}
+            {% if p.id_card %} · <a href="{{ p.id_card.url }}" target="_blank">ID</a>{% endif %}
+            {% if p.vehicle_document %} · <a href="{{ p.vehicle_document.url }}" target="_blank">Vehicle</a>{% endif %}
+            {% if not p.license_document and not p.id_card %}<span class="muted">None</span>{% endif %}
+          </td>
+          <td><span class="badge {% if p.verification_status == 'approved' %}green{% elif p.verification_status == 'pending' %}yellow{% else %}red{% endif %}">{{ p.get_verification_status_display }}</span></td>
+          <td class="row">
+            <form method="post" action="{% url 'dashboard:set_driver_status' p.pk 'approve' %}">{% csrf_token %}<button class="btn btn-sm btn-success">Approve</button></form>
+            <form method="post" action="{% url 'dashboard:set_driver_status' p.pk 'reject' %}">{% csrf_token %}<button class="btn btn-sm btn-outline">Reject</button></form>
+            <form method="post" action="{% url 'dashboard:set_driver_status' p.pk 'suspend' %}">{% csrf_token %}<button class="btn btn-sm btn-danger">Suspend</button></form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="muted">No drivers registered.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

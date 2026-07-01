@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Driver Verification — SafeDrive{% endblock %}
+{% block content %}
+<div class="flex-between mb">
+  <h2>Driver verification</h2>
+  <span class="badge {% if profile.verification_status == 'approved' %}green{% elif profile.verification_status == 'rejected' or profile.verification_status == 'suspended' %}red{% else %}yellow{% endif %}">
+    {{ profile.get_verification_status_display }}
+  </span>
+</div>
+
+{% if profile.verification_status == 'approved' %}
+  <div class="card mb"><strong>✅ You're verified.</strong> You can now accept ride requests.</div>
+{% elif profile.verification_status == 'rejected' %}
+  <div class="card mb"><strong>❌ Your documents were rejected.</strong> Please re-upload valid documents below.</div>
+{% else %}
+  <div class="card mb"><strong>⏳ Pending review.</strong> Upload your documents; an administrator will verify your account.</div>
+{% endif %}
+
+<div class="card">
+  <h3>Documents & vehicle</h3>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% include "partials/_form_fields.html" %}
+    <button class="btn" type="submit">Submit for verification</button>
+  </form>
+</div>
+{% endblock %}

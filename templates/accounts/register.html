@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Register — SafeDrive{% endblock %}
+{% block content %}
+<div style="max-width:480px;margin:0 auto">
+  <div class="card">
+    <h2>Create your account</h2>
+    <p class="muted">Choose Rider to book trips, or Driver to offer them.</p>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% include "partials/_form_fields.html" %}
+      <button class="btn btn-block" type="submit">Sign up</button>
+    </form>
+    <p class="muted mt center">Already registered? <a href="{% url 'accounts:login' %}">Log in</a></p>
+  </div>
+</div>
+{% endblock %}

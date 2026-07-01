@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Rider Dashboard — SafeDrive{% endblock %}
+{% block content %}
+<div class="flex-between mb">
+  <h2>Hi, {{ user.name }}</h2>
+  <a class="btn" href="{% url 'rides:request_ride' %}">+ Request a ride</a>
+</div>
+
+{% if active_ride %}
+<div class="card mb">
+  <div class="flex-between">
+    <div>
+      <h3 style="margin:0">Active ride</h3>
+      <p class="muted">{{ active_ride.pickup_location }} → {{ active_ride.destination }} · <span class="badge blue">{{ active_ride.get_status_display }}</span></p>
+    </div>
+    <a class="btn" href="{% url 'rides:track' active_ride.pk %}">Track live</a>
+  </div>
+</div>
+{% endif %}
+
+<div class="grid grid-3 mb reveal">
+  <div class="card center">
+    <div class="feature-icon">🚖</div>
+    <h3>Book a ride</h3>
+    <a class="btn btn-outline" href="{% url 'rides:request_ride' %}">Start</a>
+  </div>
+  <div class="card center">
+    <div class="feature-icon">👨‍👩‍👧</div>
+    <h3>Trusted contacts</h3>
+    <a class="btn btn-outline" href="{% url 'accounts:trusted_contacts' %}">Manage</a>
+  </div>
+  <div class="card center">
+    <div class="feature-icon">🛟</div>
+    <h3>Report an incident</h3>
+    <a class="btn btn-outline" href="{% url 'rides:report' %}">Report</a>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Recent trips</h3>
+  {% if rides %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>From</th><th>To</th><th>Driver</th><th>Status</th><th>Date</th><th></th></tr></thead>
+      <tbody>
+        {% for r in rides %}
+        <tr>
+          <td>{{ r.pickup_location }}</td>
+          <td>{{ r.destination }}</td>
+          <td>{{ r.driver.name|default:"—" }}</td>
+          <td><span class="badge {% if r.status == 'completed' %}green{% elif r.status == 'cancelled' or r.status == 'rejected' %}red{% else %}blue{% endif %}">{{ r.get_status_display }}</span></td>
+          <td>{{ r.created_at|date:"M d, H:i" }}</td>
+          <td>
+            {% if r.is_active %}<a class="btn btn-sm" href="{% url 'rides:track' r.pk %}">Track</a>
+            {% elif r.status == 'completed' and not r.has_been_rated %}<a class="btn btn-sm btn-outline" href="{% url 'rides:rate' r.pk %}">Rate</a>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="muted">No trips yet. <a href="{% url 'rides:request_ride' %}">Book your first ride.</a></p>
+  {% endif %}
+</div>
+{% endblock %}

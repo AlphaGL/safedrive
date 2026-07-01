@@ -1,0 +1,10 @@
+Django==5.0.6
+channels==4.1.0
+daphne==4.1.2
+Pillow==10.3.0
+python-dotenv==1.0.1
+psycopg2-binary==2.9.9
+cloudinary==1.40.0
+django-cloudinary-storage==0.3.0
+# Optional for production WebSockets (uncomment + set REDIS_URL):
+# channels-redis==4.2.0

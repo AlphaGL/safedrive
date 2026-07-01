@@ -1,0 +1,259 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SafeDrive — Ride with confidence</title>
+  <meta name="description" content="A passenger-safety-first ride platform: live tracking, one-tap SOS, trip sharing and verified drivers." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/landing.css' %}" />
+</head>
+<body class="lp">
+
+  <!-- ============ NAV ============ -->
+  <nav class="lp-nav">
+    <a href="/" class="brand">Safe<span>Drive</span></a>
+    <div class="lp-nav-links">
+      <a href="#features">Safety</a>
+      <a href="#how">How it works</a>
+      <a href="#voices">Stories</a>
+      {% if user.is_authenticated %}
+        <a class="btn btn-sm" href="{% url 'accounts:redirect_dashboard' %}">Dashboard</a>
+      {% else %}
+        <a href="{% url 'accounts:login' %}">Login</a>
+        <a class="btn btn-sm" href="{% url 'accounts:register' %}">Get started</a>
+      {% endif %}
+    </div>
+  </nav>
+
+  <!-- ============ HERO VIDEO CAROUSEL ============ -->
+  <header class="lp-hero">
+    <div class="lp-hero-bg">
+      <!-- Each slide plays a local video if present in static/video/, else shows the cinematic photo poster. -->
+      <div class="lp-slide active">
+        <video autoplay muted loop playsinline preload="auto"
+               poster="https://images.unsplash.com/photo-1449824913935-59a10b8d2000?auto=format&fit=crop&w=1920&q=80">
+          <source src="{% static 'video/hero1.mp4' %}" type="video/mp4" />
+        </video>
+      </div>
+      <div class="lp-slide">
+        <video muted loop playsinline preload="none"
+               poster="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=1920&q=80">
+          <source src="{% static 'video/hero2.mp4' %}" type="video/mp4" />
+        </video>
+      </div>
+      <div class="lp-slide">
+        <video muted loop playsinline preload="none"
+               poster="https://www.carmedis.com/wp-content/uploads/2025/08/Real-Time-GPS-Vehicle-Tracking-in-Nigeria-%E2%80%93-Stay-in-Control.jpeg">
+          <source src="{% static 'video/hero3.mp4' %}" type="video/mp4" />
+        </video>
+      </div>
+    </div>
+    <div class="lp-hero-overlay"></div>
+
+    <div class="lp-hero-inner">
+      <span class="lp-tag"><span class="dot"></span> Safety-first mobility</span>
+      <h1>
+        <span class="line"><span>The safest seat</span></span>
+        <span class="line"><span>is the <span class="grad">back seat.</span></span></span>
+      </h1>
+      <p>Live tracking, one-tap SOS, and trip sharing with the people who matter — engineered into every ride, not bolted on after.</p>
+      <div class="lp-cta">
+        <a class="btn btn-lg" href="{% url 'accounts:register' %}">Start riding safer →</a>
+        <a class="btn btn-lg btn-ghost" href="#how">See how it works</a>
+      </div>
+    </div>
+
+    <div class="lp-dots">
+      <button class="active" aria-label="Slide 1"></button>
+      <button aria-label="Slide 2"></button>
+      <button aria-label="Slide 3"></button>
+    </div>
+    <div class="lp-scroll-cue">Scroll</div>
+  </header>
+
+  <!-- ============ MARQUEE ============ -->
+  <div class="lp-marquee">
+    <div class="lp-marquee-track">
+      <span>Real-time tracking</span><span>One-tap SOS</span><span>Trusted contacts</span>
+      <span>Verified drivers</span><span>Route deviation alerts</span><span>Live trip sharing</span>
+      <span>Real-time tracking</span><span>One-tap SOS</span><span>Trusted contacts</span>
+      <span>Verified drivers</span><span>Route deviation alerts</span><span>Live trip sharing</span>
+    </div>
+  </div>
+
+  <!-- ============ FEATURE GALLERY ============ -->
+  <section class="lp-section" id="features">
+    <div class="lp-section-head reveal">
+      <span class="lp-kicker">Built for safety</span>
+      <h2>Protection that travels <span class="grad">with you.</span></h2>
+      <p>Every feature exists for one reason: to make sure you — and the people waiting for you — always know you're safe.</p>
+    </div>
+
+    <div class="lp-gallery reveal">
+      <article class="lp-card">
+        <img loading="lazy" src="https://www.carmedis.com/wp-content/uploads/2025/08/Real-Time-GPS-Vehicle-Tracking-in-Nigeria-%E2%80%93-Stay-in-Control.jpeg" alt="City traffic at dusk" />
+        <div class="lp-card-body">
+          <div class="lp-ico">🛰️</div>
+          <h3>Real-time tracking</h3>
+          <p>Watch the vehicle move on a live map, streamed continuously over secure WebSockets.</p>
+        </div>
+      </article>
+      <article class="lp-card">
+        <img loading="lazy" src="https://image.made-in-china.com/202f0j00zoDuIHBlIrpY/GPS-Tracker-Location-Microphone-Voice-Speaker-Lock-Car-Door-Remotely-Car-GPS-Tracking-DI-.jpg" alt="Passenger in a car" />
+        <div class="lp-card-body">
+          <div class="lp-ico">🚨</div>
+          <h3>One-tap SOS</h3>
+          <p>A large emergency button on every active ride alerts your contacts and our team instantly.</p>
+        </div>
+      </article>
+      <article class="lp-card">
+        <img loading="lazy" src="https://www.docs.mative.ai/img/blog/car_sharing.jpg" alt="Looking out of a car window" />
+        <div class="lp-card-body">
+          <div class="lp-ico">🔗</div>
+          <h3>Trip sharing</h3>
+          <p>Send a secure link so loved ones follow your journey live — no account needed.</p>
+        </div>
+      </article>
+      <article class="lp-card">
+        <img loading="lazy" src="https://images.unsplash.com/photo-1449824913935-59a10b8d2000?auto=format&fit=crop&w=900&q=80" alt="Night city street" />
+        <div class="lp-card-body">
+          <div class="lp-ico">🧭</div>
+          <h3>Route deviation alerts</h3>
+          <p>We compare the real route to the plan and flag detours, long stops and ETA overruns.</p>
+        </div>
+      </article>
+      <article class="lp-card">
+        <img loading="lazy" src="https://www.driveu.in/homestatic/svg/WhyUNeedDriverService/verifiedDrivers.png" alt="Car on the road" />
+        <div class="lp-card-body">
+          <div class="lp-ico">✅</div>
+          <h3>Verified drivers</h3>
+          <p>Licence, ID and vehicle papers reviewed by admins before a driver ever picks you up.</p>
+        </div>
+      </article>
+    </div>
+    <div class="lp-gallery-hint">← Drag to explore</div>
+  </section>
+
+  <!-- ============ HOW IT WORKS ============ -->
+  <section class="lp-section" id="how">
+    <div class="lp-section-head reveal">
+      <span class="lp-kicker">How it works</span>
+      <h2>Three steps to a <span class="grad">safer ride.</span></h2>
+    </div>
+    <div class="lp-steps reveal">
+      <div class="lp-step">
+        <div class="n">01</div>
+        <h3>Add your circle</h3>
+        <p>Save trusted contacts once. They're instantly looped in the moment anything goes wrong.</p>
+      </div>
+      <div class="lp-step">
+        <div class="n">02</div>
+        <h3>Book &amp; share</h3>
+        <p>Request a verified driver and share a live link so your people can watch the trip in real time.</p>
+      </div>
+      <div class="lp-step">
+        <div class="n">03</div>
+        <h3>Ride watched over</h3>
+        <p>Live GPS, route monitoring and an always-visible SOS keep every minute of the journey covered.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STATS ============ -->
+  <section class="lp-section">
+    <div class="lp-stats reveal">
+      <div class="lp-stat"><div class="v" data-count="24" data-suffix="/7">0</div><div class="l">Live monitoring</div></div>
+      <div class="lp-stat"><div class="v" data-count="1" data-suffix="-tap">0</div><div class="l">Emergency SOS</div></div>
+      <div class="lp-stat"><div class="v" data-count="100" data-suffix="%">0</div><div class="l">Verified drivers</div></div>
+      <div class="lp-stat"><div class="v" data-count="0" data-suffix="">0</div><div class="l">Accounts to share a trip</div></div>
+    </div>
+  </section>
+
+  <!-- ============ TESTIMONIALS ============ -->
+  <section class="lp-section" id="voices">
+    <div class="lp-section-head reveal" style="text-align:center;margin:0 auto 56px">
+      <span class="lp-kicker">Stories</span>
+      <h2>Peace of mind, <span class="grad">shared.</span></h2>
+    </div>
+    <div class="lp-quotes reveal">
+      <figure class="lp-quote active">
+        <blockquote>"I share every late-night ride with my sister. She watches the little car move across the map until I'm home. That changes everything."</blockquote>
+        <figcaption class="who">
+          <img class="av" src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=120&q=80" alt="" />
+          <div><b>Amara O.</b><span>Rider, Lagos</span></div>
+        </figcaption>
+      </figure>
+      <figure class="lp-quote">
+        <blockquote>"The SOS button isn't decoration. We tested it — contacts and the dashboard lit up in seconds. That's the difference between an app and a lifeline."</blockquote>
+        <figcaption class="who">
+          <img class="av" src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80" alt="" />
+          <div><b>Daniel K.</b><span>Safety lead</span></div>
+        </figcaption>
+      </figure>
+      <figure class="lp-quote">
+        <blockquote>"Getting verified was strict — exactly what I want as a driver. Riders trust the badge, and that trust shows up in my ratings."</blockquote>
+        <figcaption class="who">
+          <img class="av" src="https://images.unsplash.com/photo-1633332755192-727a05c4013d?auto=format&fit=crop&w=120&q=80" alt="" />
+          <div><b>Femi A.</b><span>Verified driver</span></div>
+        </figcaption>
+      </figure>
+    </div>
+    <div class="lp-quote-dots">
+      <button class="active" aria-label="Quote 1"></button>
+      <button aria-label="Quote 2"></button>
+      <button aria-label="Quote 3"></button>
+    </div>
+  </section>
+
+  <!-- ============ FINAL CTA ============ -->
+  <section class="lp-section">
+    <div class="lp-cta-band reveal">
+      <h2>Ride with confidence tonight.</h2>
+      <p>Join SafeDrive as a rider or driver in under a minute.</p>
+      <div class="row" style="justify-content:center">
+        <a class="btn btn-lg" href="{% url 'accounts:register' %}">Create your free account</a>
+        <a class="btn btn-lg btn-ghost" href="{% url 'accounts:login' %}">Log in</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="lp-footer">
+    <div class="lp-footer-top">
+      <div>
+        <a href="/" class="brand">Safe<span>Drive</span></a>
+        <p class="mt">Passenger-safety-first ride platform with real-time monitoring, emergency response and driver accountability.</p>
+      </div>
+      <div class="lp-footer-cols">
+        <div>
+          <h4>Product</h4>
+          <a href="#features">Safety features</a>
+          <a href="#how">How it works</a>
+          <a href="{% url 'accounts:register' %}">Sign up</a>
+        </div>
+        <div>
+          <h4>For drivers</h4>
+          <a href="{% url 'accounts:register' %}">Become a driver</a>
+          <a href="{% url 'accounts:login' %}">Driver login</a>
+        </div>
+        <div>
+          <h4>Company</h4>
+          <a href="#voices">Stories</a>
+          <a href="#">Contact</a>
+        </div>
+      </div>
+    </div>
+    <div class="lp-footer-bottom">
+      <span>© {% now "Y" %} SafeDrive. Built for safer journeys.</span>
+      <span>Real-time tracking · SOS · Trip sharing</span>
+    </div>
+  </footer>
+
+  <script src="{% static 'js/landing.js' %}"></script>
+</body>
+</html>

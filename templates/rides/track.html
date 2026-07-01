@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Live Tracking — SafeDrive{% endblock %}
+{% block content %}
+<div class="flex-between mb">
+  <div>
+    <h2 style="margin:0">{{ ride.pickup_location }} → {{ ride.destination }}</h2>
+    <p class="muted">Status: <strong id="ride-status">{{ ride.get_status_display }}</strong>
+      {% if ride.eta_minutes %}· ETA ~{{ ride.eta_minutes }} min{% endif %}</p>
+  </div>
+  <div class="row">
+    {% if is_driver %}
+      {% if ride.status == 'accepted' %}
+      <form method="post" action="{% url 'rides:start_ride' ride.pk %}">{% csrf_token %}<button class="btn btn-success">Start ride</button></form>
+      {% elif ride.status == 'ongoing' %}
+      <form method="post" action="{% url 'rides:end_ride' ride.pk %}">{% csrf_token %}<button class="btn btn-warning">End ride</button></form>
+      {% endif %}
+    {% else %}
+      <a class="btn btn-outline" href="{% url 'rides:shared_trip' ride.share_token %}" target="_blank">🔗 Share trip</a>
+      <a class="btn btn-outline" href="{% url 'rides:report_ride' ride.pk %}">Report</a>
+    {% endif %}
+  </div>
+</div>
+
+<div id="alert-banner" class="card" style="display:none;border-color:var(--danger);background:rgba(255,71,87,.12);margin-bottom:14px"></div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <div id="map" class="map"></div>
+  </div>
+  <div class="card">
+    <h3>Trip details</h3>
+    <table>
+      <tr><th>Rider</th><td>{{ ride.rider.name }}</td></tr>
+      <tr><th>Driver</th><td>{{ ride.driver.name|default:"Awaiting driver" }}</td></tr>
+      {% if ride.driver.driver_profile %}
+      <tr><th>Vehicle</th><td>{{ ride.driver.driver_profile.vehicle_type }} · {{ ride.driver.driver_profile.vehicle_number }}</td></tr>
+      {% endif %}
+      <tr><th>Pickup</th><td>{{ ride.pickup_location }}</td></tr>
+      <tr><th>Destination</th><td>{{ ride.destination }}</td></tr>
+    </table>
+    {% if is_driver %}
+    <p class="muted mt">📡 Your location is being shared live with the rider and trusted contacts.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% if not is_driver %}
+<button id="sos-btn" class="sos-btn">SOS</button>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.RIDE_CONFIG = {
+    rideId: {{ ride.pk }},
+    wsScheme: location.protocol === "https:" ? "wss" : "ws",
+    host: location.host,
+    token: "",
+    canWrite: {{ is_driver|yesno:"true,false" }},
+    plannedRoute: {{ planned_route_json|safe }},
+    pickup: { lat: {{ ride.pickup_lat }}, lng: {{ ride.pickup_lng }} },
+    destination: { lat: {{ ride.destination_lat }}, lng: {{ ride.destination_lng }} },
+    rebookUrl: "{% url 'rides:request_ride' %}",
+  };
+</script>
+<script src="{% static 'js/tracking.js' %}"></script>
+{% if not is_driver %}
+<script>
+  window.SOS_CONFIG = { url: "{% url 'rides:sos' ride.pk %}", csrf: "{{ csrf_token }}" };
+</script>
+<script src="{% static 'js/sos.js' %}"></script>
+{% endif %}
+{% endblock %}

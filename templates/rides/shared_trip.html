@@ -66,6 +66,7 @@
       plannedRoute: {{ planned_route_json|safe }},
       pickup: { lat: {{ ride.pickup_lat }}, lng: {{ ride.pickup_lng }} },
       destination: { lat: {{ ride.destination_lat }}, lng: {{ ride.destination_lng }} },
+      simulate: {% if ride.is_active %}true{% else %}false{% endif %},
     };
   </script>
   <script src="{% static 'js/tracking.js' %}"></script>

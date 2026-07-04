@@ -33,14 +33,14 @@
   });
   let vehicleMarker = null;
 
-  function setVehicle(lat, lng) {
+  function setVehicle(lat, lng, trace) {
     const latlng = [lat, lng];
     if (!vehicleMarker) {
       vehicleMarker = L.marker(latlng, { icon: carIcon }).addTo(map).bindPopup("Vehicle");
     } else {
       vehicleMarker.setLatLng(latlng);
     }
-    actualPath.addLatLng(latlng);
+    if (trace !== false) actualPath.addLatLng(latlng);
   }
 
   map.fitBounds(L.latLngBounds([pickup.lat, pickup.lng], [dest.lat, dest.lng]).pad(0.3));
@@ -57,6 +57,8 @@
       if (data.type === "init") {
         if (data.last) setVehicle(data.last.lat, data.last.lng);
       } else if (data.type === "location") {
+        realReceived = true;          // a real driver GPS stream — stop simulating
+        stopSimulation();
         setVehicle(data.lat, data.lng);
       } else if (data.type === "alert") {
         showAlertBanner(data.alert);
@@ -70,6 +72,37 @@
   }
   connect();
 
+  // --- Demo simulation: animate the vehicle along the planned route so the
+  //     map is always "live". Cancels the moment a real GPS update arrives.
+  let realReceived = false, simTimer = null;
+  function buildDensePath() {
+    const route = (cfg.plannedRoute && cfg.plannedRoute.length > 1)
+      ? cfg.plannedRoute
+      : [[pickup.lat, pickup.lng], [dest.lat, dest.lng]];
+    const pts = [];
+    for (let i = 0; i < route.length - 1; i++) {
+      const a = route[i], b = route[i + 1];
+      for (let s = 0; s < 8; s++) pts.push([a[0] + (b[0] - a[0]) * s / 8, a[1] + (b[1] - a[1]) * s / 8]);
+    }
+    pts.push(route[route.length - 1]);
+    return pts;
+  }
+  function startSimulation() {
+    if (!cfg.simulate || cfg.canWrite || realReceived) return;
+    const pts = buildDensePath();
+    let i = 0;
+    stopSimulation();
+    simTimer = setInterval(() => {
+      if (realReceived) return stopSimulation();
+      if (i === 0) actualPath.setLatLngs([]);   // reset trail each loop
+      setVehicle(pts[i][0], pts[i][1]);
+      i = (i + 1) % pts.length;
+    }, 450);
+  }
+  function stopSimulation() { if (simTimer) { clearInterval(simTimer); simTimer = null; } }
+  // Give a real driver a few seconds to appear before falling back to sim.
+  setTimeout(startSimulation, 3500);
+
   function showAlertBanner(alert) {
     const banner = document.getElementById("alert-banner");
     if (!banner) return;
@@ -80,6 +113,11 @@
   function handleStatus(status) {
     const banner = document.getElementById("alert-banner");
     if (!banner) return;
+    if (status === "accepted" || status === "ongoing") {
+      // Driver is active — animate movement even if the page was loaded earlier.
+      cfg.simulate = true;
+      startSimulation();
+    }
     if (status === "accepted") {
       banner.style.borderColor = "var(--success)";
       banner.style.background = "rgba(52,211,153,.12)";

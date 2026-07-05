@@ -35,6 +35,24 @@ def estimate_eta_minutes(distance_m, avg_speed_kmh=30):
     return max(1, round(hours * 60))
 
 
+# Fare model (Nigerian Naira). Not meant to be precise — a simple, transparent
+# base + distance + time formula, floored at a minimum fare.
+FARE_BASE = 500          # flag-down fee
+FARE_PER_KM = 150        # per kilometre
+FARE_PER_MIN = 20        # per minute of estimated travel
+FARE_MINIMUM = 700
+
+
+def estimate_fare(distance_m, eta_minutes=None):
+    """Return an estimated fare in whole Naira, rounded to the nearest 50."""
+    km = distance_m / 1000
+    fare = FARE_BASE + FARE_PER_KM * km
+    if eta_minutes:
+        fare += FARE_PER_MIN * eta_minutes
+    fare = max(FARE_MINIMUM, fare)
+    return int(round(fare / 50.0) * 50)
+
+
 def build_straight_route(start, end, points=12):
     """Interpolate a simple straight-line 'planned route' between two points.
 

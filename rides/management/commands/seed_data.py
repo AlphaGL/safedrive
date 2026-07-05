@@ -12,7 +12,12 @@ from django.utils import timezone
 
 from accounts.models import DriverProfile, TrustedContact, User
 from rides.models import EmergencyAlert, IncidentReport, Rating, Ride, RideTracking
-from rides.utils import build_straight_route, estimate_eta_minutes, haversine_m
+from rides.utils import (
+    build_straight_route,
+    estimate_eta_minutes,
+    estimate_fare,
+    haversine_m,
+)
 
 PASSWORD = "password123"
 
@@ -173,12 +178,14 @@ class Command(BaseCommand):
             p, dest = random.sample(PLACES, 2)
             route = build_straight_route((p[1], p[2]), (dest[1], dest[2]))
             distance = haversine_m(p[1], p[2], dest[1], dest[2])
+            eta = estimate_eta_minutes(distance)
             started = now - timedelta(days=random.randint(0, 20), hours=random.randint(0, 12))
             ride = Ride.objects.create(
                 rider=rider, driver=driver,
                 pickup_location=p[0], pickup_lat=p[1], pickup_lng=p[2],
                 destination=dest[0], destination_lat=dest[1], destination_lng=dest[2],
-                planned_route=route, eta_minutes=estimate_eta_minutes(distance),
+                planned_route=route, eta_minutes=eta,
+                distance_km=round(distance / 1000, 1), fare=estimate_fare(distance, eta),
                 status=Ride.Status.COMPLETED,
                 start_time=started, end_time=started + timedelta(minutes=random.randint(12, 40)),
                 created_at=started,
@@ -196,12 +203,14 @@ class Command(BaseCommand):
         for driver in approved[:3]:
             rider = random.choice(riders)
             p, dest = random.sample(PLACES, 2)
+            dist = haversine_m(p[1], p[2], dest[1], dest[2])
+            eta = estimate_eta_minutes(dist)
             ride = Ride.objects.create(
                 rider=rider, driver=driver,
                 pickup_location=p[0], pickup_lat=p[1], pickup_lng=p[2],
                 destination=dest[0], destination_lat=dest[1], destination_lng=dest[2],
                 planned_route=build_straight_route((p[1], p[2]), (dest[1], dest[2])),
-                eta_minutes=estimate_eta_minutes(haversine_m(p[1], p[2], dest[1], dest[2])),
+                eta_minutes=eta, distance_km=round(dist / 1000, 1), fare=estimate_fare(dist, eta),
                 status=Ride.Status.ONGOING, start_time=now - timedelta(minutes=random.randint(5, 20)),
             )
             RideTracking.objects.create(ride=ride, latitude=p[1], longitude=p[2])
@@ -211,12 +220,14 @@ class Command(BaseCommand):
         for driver in approved[3:6]:
             rider = random.choice(riders)
             p, dest = random.sample(PLACES, 2)
+            dist = haversine_m(p[1], p[2], dest[1], dest[2])
+            eta = estimate_eta_minutes(dist)
             Ride.objects.create(
                 rider=rider, driver=driver,
                 pickup_location=p[0], pickup_lat=p[1], pickup_lng=p[2],
                 destination=dest[0], destination_lat=dest[1], destination_lng=dest[2],
                 planned_route=build_straight_route((p[1], p[2]), (dest[1], dest[2])),
-                eta_minutes=estimate_eta_minutes(haversine_m(p[1], p[2], dest[1], dest[2])),
+                eta_minutes=eta, distance_km=round(dist / 1000, 1), fare=estimate_fare(dist, eta),
                 status=Ride.Status.REQUESTED,
             )
 

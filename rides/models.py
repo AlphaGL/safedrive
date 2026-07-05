@@ -41,6 +41,11 @@ class Ride(models.Model):
     end_time = models.DateTimeField(null=True, blank=True)
     eta_minutes = models.PositiveIntegerField(null=True, blank=True)
 
+    # Pricing + cancellation
+    distance_km = models.FloatField(null=True, blank=True)
+    fare = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    cancel_reason = models.CharField(max_length=255, blank=True, default="")
+
     # Public, unguessable token for trip sharing (no account required to view).
     share_token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
 

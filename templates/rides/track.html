@@ -18,9 +18,46 @@
     {% else %}
       <a class="btn btn-outline" href="{% url 'rides:shared_trip' ride.share_token %}" target="_blank">🔗 Share trip</a>
       <a class="btn btn-outline" href="{% url 'rides:report_ride' ride.pk %}">Report</a>
+      {% if ride.status == 'requested' or ride.status == 'accepted' or ride.status == 'ongoing' %}
+      <button type="button" class="btn btn-danger" id="cancel-open">Cancel ride</button>
+      {% endif %}
     {% endif %}
   </div>
 </div>
+
+{% if not is_driver %}
+<!-- Cancel modal -->
+<div id="cancel-modal" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.6);
+     align-items:center;justify-content:center;padding:20px">
+  <div class="card" style="max-width:440px;width:100%">
+    <h3 style="margin-top:0">Cancel this ride?</h3>
+    <p class="muted">Please let us know why you're cancelling — this helps keep the platform safe.</p>
+    <form method="post" action="{% url 'rides:cancel_ride' ride.pk %}">
+      {% csrf_token %}
+      <div class="field">
+        <label>Reason for cancelling</label>
+        <select name="reason" id="cancel-reason" required>
+          <option value="">Select a reason…</option>
+          <option>Driver is taking too long</option>
+          <option>I no longer need the ride</option>
+          <option>Booked by mistake</option>
+          <option>Driver asked me to cancel</option>
+          <option>I feel unsafe</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="field" id="other-wrap" style="display:none">
+        <label>Tell us more</label>
+        <input type="text" name="reason_other" placeholder="Your reason" />
+      </div>
+      <div class="row" style="justify-content:flex-end">
+        <button type="button" class="btn btn-outline" id="cancel-close">Keep ride</button>
+        <button type="submit" class="btn btn-danger">Cancel ride</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
 
 <div id="alert-banner" class="card" style="display:none;border-color:var(--danger);background:rgba(255,71,87,.12);margin-bottom:14px"></div>
 
@@ -48,6 +85,7 @@
       {% endif %}
       <tr><th>Pickup</th><td>{{ ride.pickup_location }}</td></tr>
       <tr><th>Destination</th><td>{{ ride.destination }}</td></tr>
+      {% if ride.fare %}<tr><th>Fare</th><td><strong>₦{{ ride.fare|floatformat:0 }}</strong>{% if ride.distance_km %} · {{ ride.distance_km }} km{% endif %}</td></tr>{% endif %}
     </table>
     {% if is_driver %}
     <p class="muted mt">📡 Your location is being shared live with the rider and trusted contacts.</p>
@@ -72,6 +110,7 @@
     pickup: { lat: {{ ride.pickup_lat }}, lng: {{ ride.pickup_lng }} },
     destination: { lat: {{ ride.destination_lat }}, lng: {{ ride.destination_lng }} },
     rebookUrl: "{% url 'rides:request_ride' %}",
+    rateUrl: "{% url 'rides:rate' ride.pk %}",
     simulate: {% if not is_driver and ride.is_active %}true{% else %}false{% endif %},
   };
 </script>
@@ -79,6 +118,22 @@
 {% if not is_driver %}
 <script>
   window.SOS_CONFIG = { url: "{% url 'rides:sos' ride.pk %}", csrf: "{{ csrf_token }}" };
+
+  // Cancel modal
+  (function () {
+    const modal = document.getElementById("cancel-modal");
+    const openBtn = document.getElementById("cancel-open");
+    const closeBtn = document.getElementById("cancel-close");
+    const reason = document.getElementById("cancel-reason");
+    const otherWrap = document.getElementById("other-wrap");
+    if (!modal) return;
+    if (openBtn) openBtn.addEventListener("click", () => { modal.style.display = "flex"; });
+    if (closeBtn) closeBtn.addEventListener("click", () => { modal.style.display = "none"; });
+    modal.addEventListener("click", (e) => { if (e.target === modal) modal.style.display = "none"; });
+    if (reason) reason.addEventListener("change", () => {
+      otherWrap.style.display = reason.value === "Other" ? "block" : "none";
+    });
+  })();
 </script>
 <script src="{% static 'js/sos.js' %}"></script>
 {% endif %}

@@ -6,14 +6,18 @@
   {% if rides %}
   <div class="table-wrap">
     <table>
-      <thead><tr><th>From</th><th>To</th><th>{% if user.is_driver %}Rider{% else %}Driver{% endif %}</th><th>Status</th><th>Date</th><th></th></tr></thead>
+      <thead><tr><th>From</th><th>To</th><th>{% if user.is_driver %}Rider{% else %}Driver{% endif %}</th><th>Fare</th><th>Status</th><th>Date</th><th></th></tr></thead>
       <tbody>
         {% for r in rides %}
         <tr>
           <td>{{ r.pickup_location }}</td>
           <td>{{ r.destination }}</td>
           <td>{% if user.is_driver %}{{ r.rider.name }}{% else %}{{ r.driver.name|default:"—" }}{% endif %}</td>
-          <td><span class="badge {% if r.status == 'completed' %}green{% elif r.status == 'cancelled' or r.status == 'rejected' %}red{% else %}blue{% endif %}">{{ r.get_status_display }}</span></td>
+          <td>{% if r.fare %}₦{{ r.fare|floatformat:0 }}{% else %}—{% endif %}</td>
+          <td>
+            <span class="badge {% if r.status == 'completed' %}green{% elif r.status == 'cancelled' or r.status == 'rejected' %}red{% else %}blue{% endif %}">{{ r.get_status_display }}</span>
+            {% if r.status == 'cancelled' and r.cancel_reason %}<br><span class="muted" style="font-size:.75rem">{{ r.cancel_reason }}</span>{% endif %}
+          </td>
           <td>{{ r.created_at|date:"M d, Y H:i" }}</td>
           <td>
             {% if r.is_active %}<a class="btn btn-sm" href="{% url 'rides:track' r.pk %}">Track</a>

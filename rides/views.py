@@ -13,7 +13,12 @@ from accounts.models import DriverProfile, User
 from .forms import IncidentReportForm, RatingForm, RideRequestForm
 from .models import EmergencyAlert, Rating, Ride
 from .services import broadcast_ride_status, create_sos, notify_driver_of_request
-from .utils import build_straight_route, estimate_eta_minutes, haversine_m
+from .utils import (
+    build_straight_route,
+    estimate_eta_minutes,
+    estimate_fare,
+    haversine_m,
+)
 
 
 # --------------------------------------------------------------------------- #
@@ -71,7 +76,9 @@ def request_ride(request):
                 ride.pickup_lat, ride.pickup_lng,
                 ride.destination_lat, ride.destination_lng,
             )
+            ride.distance_km = round(distance / 1000, 1)
             ride.eta_minutes = estimate_eta_minutes(distance)
+            ride.fare = estimate_fare(distance, ride.eta_minutes)
             ride.status = Ride.Status.REQUESTED
             ride.save()
             notify_driver_of_request(ride)
@@ -86,7 +93,11 @@ def request_ride(request):
 
 @login_required
 def available_drivers(request):
-    """JSON list of approved, online drivers near a point (for the request page)."""
+    """JSON list of verified drivers who are ONLINE and free, ranked for safety.
+
+    Safety-first ordering: higher-rated, more-experienced drivers surface first,
+    then nearest. Offline, unverified, suspended or busy drivers never appear.
+    """
     lat = float(request.GET.get("lat", 0))
     lng = float(request.GET.get("lng", 0))
     # Drivers currently tied up on a live trip can't be booked.
@@ -97,6 +108,7 @@ def available_drivers(request):
         DriverProfile.objects.filter(
             verification_status=DriverProfile.Verification.APPROVED,
             user__status=User.Status.ACTIVE,
+            is_online=True,  # only online drivers
         )
         .exclude(user_id__in=busy_driver_ids)
         .select_related("user")
@@ -106,12 +118,19 @@ def available_drivers(request):
         d_lat = dp.current_lat if dp.current_lat is not None else lat + 0.01
         d_lng = dp.current_lng if dp.current_lng is not None else lng + 0.01
         distance = haversine_m(lat, lng, d_lat, d_lng) if lat and lng else None
+        rating = dp.average_rating
+        trips = dp.user.rides_as_driver.filter(status=Ride.Status.COMPLETED).count()
+        # A simple safety score: rating (0-5) weighted with experience.
+        safety_score = round((rating or 4.0) + min(trips, 50) / 50, 2)
         data.append(
             {
                 "id": dp.user_id,
                 "name": dp.user.name,
                 "vehicle": f"{dp.vehicle_type} · {dp.vehicle_number}",
-                "rating": dp.average_rating,
+                "rating": rating,
+                "trips": trips,
+                "safety_score": safety_score,
+                "verified": True,
                 "avatar": dp.user.avatar,
                 "vehicle_image": dp.vehicle_image,
                 "lat": d_lat,
@@ -119,8 +138,25 @@ def available_drivers(request):
                 "distance_m": round(distance) if distance else None,
             }
         )
-    data.sort(key=lambda d: (d["distance_m"] is None, d["distance_m"] or 0))
+    # Safety first (higher score), then nearest.
+    data.sort(key=lambda d: (-d["safety_score"], d["distance_m"] is None, d["distance_m"] or 0))
     return JsonResponse({"drivers": data})
+
+
+@login_required
+def fare_estimate(request):
+    """Return distance / ETA / fare for a pickup→destination pair."""
+    try:
+        plat = float(request.GET["plat"]); plng = float(request.GET["plng"])
+        dlat = float(request.GET["dlat"]); dlng = float(request.GET["dlng"])
+    except (KeyError, ValueError):
+        return JsonResponse({"error": "invalid coordinates"}, status=400)
+    distance = haversine_m(plat, plng, dlat, dlng)
+    eta = estimate_eta_minutes(distance)
+    fare = estimate_fare(distance, eta)
+    return JsonResponse(
+        {"distance_km": round(distance / 1000, 1), "eta_minutes": eta, "fare": fare}
+    )
 
 
 @login_required
@@ -158,6 +194,34 @@ def sos(request, pk):
     return JsonResponse(
         {"ok": True, "alert_id": alert.id, "contacts_notified": notified}
     )
+
+
+@login_required
+@require_POST
+def cancel_ride(request, pk):
+    """Rider cancels an in-progress ride. A reason is required."""
+    ride = get_object_or_404(Ride, pk=pk, rider=request.user)
+    if ride.status in (
+        Ride.Status.COMPLETED, Ride.Status.CANCELLED, Ride.Status.REJECTED
+    ):
+        messages.error(request, "This ride can no longer be cancelled.")
+        return redirect("rides:trip_history")
+    reason = request.POST.get("reason", "").strip()
+    if reason == "Other":
+        reason = request.POST.get("reason_other", "").strip() or "Other"
+    if not reason:
+        messages.error(request, "Please tell us why you're cancelling.")
+        return redirect("rides:track", pk=ride.pk)
+    ride.status = Ride.Status.CANCELLED
+    ride.cancel_reason = reason
+    ride.end_time = timezone.now()
+    ride.save()
+    ride.emergency_alerts.filter(status=EmergencyAlert.Status.ACTIVE).update(
+        status=EmergencyAlert.Status.RESOLVED, resolved_at=timezone.now()
+    )
+    broadcast_ride_status(ride)
+    messages.info(request, "Your ride has been cancelled.")
+    return redirect("rides:rider_dashboard")
 
 
 @login_required

@@ -132,10 +132,15 @@
         `❌ This driver is unavailable. <a href="${cfg.rebookUrl || "#"}">Choose another driver →</a>`;
       banner.style.display = "block";
     } else if (status === "completed") {
+      stopSimulation();
       banner.style.borderColor = "var(--success)";
       banner.style.background = "rgba(52,211,153,.12)";
-      banner.innerHTML = "🏁 Trip completed. Thank you for riding with SafeDrive!";
+      banner.innerHTML = cfg.rateUrl
+        ? `🏁 Trip completed! <a href="${cfg.rateUrl}"><strong>Rate your driver →</strong></a>`
+        : "🏁 Trip completed. Thank you for riding with SafeDrive!";
       banner.style.display = "block";
+    } else if (status === "cancelled") {
+      stopSimulation();
     }
   }
 

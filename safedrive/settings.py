@@ -15,7 +15,7 @@ def env_bool(key, default=False):
 
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-insecure-secret-key-change-me")
-DEBUG = env_bool("DEBUG", True)
+DEBUG = True
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",") if h.strip()]
 # Needed for HTTPS POST/CSRF on deployed domains, e.g. https://your-app.vercel.app
 CSRF_TRUSTED_ORIGINS = [

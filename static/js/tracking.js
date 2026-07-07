@@ -7,6 +7,7 @@
   const cfg = window.RIDE_CONFIG;
   if (!cfg) return;
 
+<<<<<<< HEAD
   const map = L.map("map", { zoomControl: true, attributionControl: false });
   // A clean, muted basemap (like Uber/Bolt use) instead of default OSM styling.
   L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
@@ -15,10 +16,18 @@
   }).addTo(map);
   L.control.attribution({ prefix: false, position: "bottomright" })
     .addAttribution("&copy; OpenStreetMap &copy; CARTO").addTo(map);
+=======
+  const map = L.map("map");
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "&copy; OpenStreetMap",
+  }).addTo(map);
+>>>>>>> 3b4da265b9e6343f66681dd946ef6089191e86dd
 
   const pickup = cfg.pickup;
   const dest = cfg.destination;
 
+<<<<<<< HEAD
   // --- Uber/Bolt-style pin icons ---
   const pickupIcon = L.divIcon({
     className: "ride-pin",
@@ -89,6 +98,32 @@
       }
     }
     lastLatLng = latlng;
+=======
+  // Markers for pickup, destination, vehicle.
+  const pickupMarker = L.marker([pickup.lat, pickup.lng]).addTo(map).bindPopup("Pickup");
+  const destMarker = L.marker([dest.lat, dest.lng]).addTo(map).bindPopup("Destination");
+
+  // Planned route (dashed) + actual travelled path (solid).
+  if (cfg.plannedRoute && cfg.plannedRoute.length) {
+    L.polyline(cfg.plannedRoute, { color: "#9aa3c0", dashArray: "6 8", weight: 3 }).addTo(map);
+  }
+  const actualPath = L.polyline([], { color: "#4f7cff", weight: 4 }).addTo(map);
+
+  const carIcon = L.divIcon({
+    html: '<div style="font-size:26px">🚗</div>',
+    className: "car-icon",
+    iconSize: [26, 26],
+  });
+  let vehicleMarker = null;
+
+  function setVehicle(lat, lng, trace) {
+    const latlng = [lat, lng];
+    if (!vehicleMarker) {
+      vehicleMarker = L.marker(latlng, { icon: carIcon }).addTo(map).bindPopup("Vehicle");
+    } else {
+      vehicleMarker.setLatLng(latlng);
+    }
+>>>>>>> 3b4da265b9e6343f66681dd946ef6089191e86dd
     if (trace !== false) actualPath.addLatLng(latlng);
   }
 
@@ -160,7 +195,10 @@
   }
 
   function handleStatus(status) {
+<<<<<<< HEAD
     if (window.updateRideStepper) window.updateRideStepper(status);
+=======
+>>>>>>> 3b4da265b9e6343f66681dd946ef6089191e86dd
     const banner = document.getElementById("alert-banner");
     if (!banner) return;
     if (status === "accepted" || status === "ongoing") {

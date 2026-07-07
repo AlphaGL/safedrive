@@ -16,6 +16,7 @@ def env_bool(key, default=False):
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-insecure-secret-key-change-me")
 DEBUG = True
+<<<<<<< HEAD
 
 # ---- Email (used for 2FA login codes) ----
 # Uses Resend's SMTP relay: https://resend.com — sign up free, create an API
@@ -31,6 +32,8 @@ DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "SafeDrive <onboarding@rese
 # instead of sending — handy for local dev before you've set up Resend.
 if not EMAIL_HOST_PASSWORD:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+=======
+>>>>>>> 3b4da265b9e6343f66681dd946ef6089191e86dd
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",") if h.strip()]
 # Needed for HTTPS POST/CSRF on deployed domains, e.g. https://your-app.vercel.app
 CSRF_TRUSTED_ORIGINS = [

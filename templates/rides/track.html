@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 {% block title %}Live Tracking — SafeDrive{% endblock %}
+<<<<<<< HEAD
 {% block head %}
 <style>
   .stepper { display:flex; align-items:flex-start; margin-bottom:22px; padding:18px 14px;
@@ -24,14 +25,21 @@
   @keyframes pulse { 0%,100% { box-shadow:0 0 0 4px rgba(25,195,125,.16); } 50% { box-shadow:0 0 0 8px rgba(25,195,125,.08); } }
 </style>
 {% endblock %}
+=======
+>>>>>>> 3b4da265b9e6343f66681dd946ef6089191e86dd
 {% block content %}
 <div class="flex-between mb">
   <div>
     <h2 style="margin:0">{{ ride.pickup_location }} → {{ ride.destination }}</h2>
+<<<<<<< HEAD
     <p class="muted" style="margin:4px 0 0" id="ride-status-text">
       {% if ride.eta_minutes %}ETA ~{{ ride.eta_minutes }} min{% endif %}
     </p>
     <span id="ride-status" style="display:none">{{ ride.status }}</span>
+=======
+    <p class="muted">Status: <strong id="ride-status">{{ ride.get_status_display }}</strong>
+      {% if ride.eta_minutes %}· ETA ~{{ ride.eta_minutes }} min{% endif %}</p>
+>>>>>>> 3b4da265b9e6343f66681dd946ef6089191e86dd
   </div>
   <div class="row">
     {% if is_driver %}
@@ -50,6 +58,7 @@
   </div>
 </div>
 
+<<<<<<< HEAD
 <div class="stepper" id="ride-stepper">
   <div class="step" data-step="requested"><span class="line"></span><span class="dot">1</span><span class="label">Requested</span></div>
   <div class="step" data-step="accepted"><span class="line"></span><span class="dot">2</span><span class="label">Driver on the way</span></div>
@@ -57,6 +66,8 @@
   <div class="step" data-step="completed"><span class="line"></span><span class="dot">✓</span><span class="label">Completed</span></div>
 </div>
 
+=======
+>>>>>>> 3b4da265b9e6343f66681dd946ef6089191e86dd
 {% if not is_driver %}
 <!-- Cancel modal -->
 <div id="cancel-modal" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.6);
@@ -132,6 +143,7 @@
 
 {% block scripts %}
 <script>
+<<<<<<< HEAD
   (function () {
     const order = ["requested", "accepted", "ongoing", "completed"];
     const steps = [...document.querySelectorAll("#ride-stepper .step")];
@@ -168,6 +180,8 @@
   })();
 </script>
 <script>
+=======
+>>>>>>> 3b4da265b9e6343f66681dd946ef6089191e86dd
   window.RIDE_CONFIG = {
     rideId: {{ ride.pk }},
     wsScheme: location.protocol === "https:" ? "wss" : "ws",

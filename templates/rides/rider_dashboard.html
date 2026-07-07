@@ -60,7 +60,11 @@
     </table>
   </div>
   {% else %}
+<<<<<<< HEAD
   <div class="empty-state"><div class="icon">🚗</div><div class="title">No trips yet</div><p>When you're ready, <a href="{% url 'rides:request_ride' %}">book your first ride</a>.</p></div>
+=======
+  <p class="muted">No trips yet. <a href="{% url 'rides:request_ride' %}">Book your first ride.</a></p>
+>>>>>>> 3b4da265b9e6343f66681dd946ef6089191e86dd
   {% endif %}
 </div>
 {% endblock %}

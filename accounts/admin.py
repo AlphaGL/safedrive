@@ -6,8 +6,13 @@ from .models import DriverProfile, TrustedContact, User
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
+<<<<<<< HEAD
     list_display = ("email", "name", "role", "status", "is_active", "is_staff", "created_at")
     list_filter = ("role", "status", "is_active", "is_staff")
+=======
+    list_display = ("email", "name", "role", "status", "is_staff", "created_at")
+    list_filter = ("role", "status", "is_staff")
+>>>>>>> 3b4da265b9e6343f66681dd946ef6089191e86dd
     search_fields = ("email", "name", "phone")
     ordering = ("-created_at",)
     fieldsets = BaseUserAdmin.fieldsets + (

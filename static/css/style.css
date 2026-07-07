@@ -104,7 +104,10 @@ a:hover { color: var(--accent); }
   transition: color 0.2s var(--ease), background 0.2s var(--ease);
 }
 .nav-links a:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); }
+<<<<<<< HEAD
 .nav-links a.active { color: var(--text); background: rgba(25, 195, 125, 0.12); }
+=======
+>>>>>>> 3b4da265b9e6343f66681dd946ef6089191e86dd
 
 /* ---- Cards ---- */
 .card {
@@ -113,9 +116,15 @@ a:hover { color: var(--accent); }
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 24px;
+<<<<<<< HEAD
   transition: border-color 0.25s var(--ease), transform 0.2s var(--ease), box-shadow 0.25s var(--ease);
 }
 .card:hover { border-color: var(--border-strong); transform: translateY(-2px); box-shadow: var(--shadow); }
+=======
+  transition: border-color 0.25s var(--ease);
+}
+.card:hover { border-color: var(--border-strong); }
+>>>>>>> 3b4da265b9e6343f66681dd946ef6089191e86dd
 .card h2, .card h3 { margin-top: 0; }
 
 /* Stat cards */
@@ -143,6 +152,7 @@ a:hover { color: var(--accent); }
 }
 .btn:hover { background: var(--accent-600); color: var(--on-accent); }
 .btn:active { transform: translateY(1px); }
+<<<<<<< HEAD
 .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 .btn:focus-visible, .btn-outline:focus-visible, a:focus-visible, input:focus-visible,
 select:focus-visible, textarea:focus-visible {
@@ -154,6 +164,8 @@ select:focus-visible, textarea:focus-visible {
   border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: -2px;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+=======
+>>>>>>> 3b4da265b9e6343f66681dd946ef6089191e86dd
 .btn-outline {
   background: transparent; border: 1px solid var(--border-strong); color: var(--text);
 }
@@ -212,6 +224,7 @@ tbody tr:last-child td { border-bottom: none; }
 /* ---- Maps ---- */
 .map { height: 440px; width: 100%; border-radius: var(--radius); border: 1px solid var(--border-strong); }
 .map-sm { height: 280px; }
+<<<<<<< HEAD
 
 /* Uber/Bolt-style ride markers */
 .ride-pin { background: transparent; border: none; }
@@ -223,6 +236,8 @@ tbody tr:last-child td { border-bottom: none; }
 .pin-flag { filter: drop-shadow(0 2px 4px rgba(0,0,0,.35)); }
 .car-icon-wrap { background: transparent; border: none; }
 .car-marker { transition: transform .3s linear; filter: drop-shadow(0 2px 5px rgba(10,92,255,.45)); }
+=======
+>>>>>>> 3b4da265b9e6343f66681dd946ef6089191e86dd
 .leaflet-container { background: #0e1013 !important; font-family: inherit; }
 .leaflet-popup-content-wrapper { background: var(--surface-solid); color: var(--text); border-radius: 10px; }
 .leaflet-popup-tip { background: var(--surface-solid); }
@@ -242,6 +257,7 @@ tbody tr:last-child td { border-bottom: none; }
 .messages .info::before { content: "i"; color: var(--muted); font-weight: 800; }
 .messages .warning { background: rgba(230, 162, 60, 0.09); border-color: rgba(230, 162, 60, 0.35); }
 .messages .warning::before { content: "!"; color: var(--warning); font-weight: 800; }
+<<<<<<< HEAD
 .messages li { justify-content: space-between; }
 .messages li span { flex: 1; }
 .msg-close {
@@ -259,6 +275,8 @@ tbody tr:last-child td { border-bottom: none; }
 .empty-state .icon { font-size: 2rem; margin-bottom: 10px; opacity: .8; }
 .empty-state .title { color: var(--text); font-weight: 700; margin-bottom: 4px; }
 .empty-state p { margin: 0; font-size: .9rem; }
+=======
+>>>>>>> 3b4da265b9e6343f66681dd946ef6089191e86dd
 
 /* ---- SOS button ---- */
 .sos-btn {

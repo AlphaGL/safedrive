@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Profile — SafeDrive{% endblock %}
+{% block content %}
+<div class="flex-between mb">
+  <h2>Profile</h2>
+  <span class="badge blue">{{ user.get_role_display }}</span>
+</div>
+<div class="grid grid-2">
+  <div class="card">
+    <h3>Account details</h3>
+    <form method="post">
+      {% csrf_token %}
+      {% include "partials/_form_fields.html" %}
+      <div class="field">
+        <label>Email</label>
+        <input value="{{ user.email }}" disabled />
+      </div>
+      <button class="btn" type="submit">Save changes</button>
+    </form>
+  </div>
+  <div class="card">
+    <h3>Status</h3>
+    <p>Account status: <span class="badge {% if user.status == 'active' %}green{% elif user.status == 'suspended' %}red{% else %}yellow{% endif %}">{{ user.get_status_display }}</span></p>
+    <p class="muted">Member since {{ user.created_at|date:"M Y" }}</p>
+    {% if user.is_rider %}
+      <a class="btn btn-outline" href="{% url 'accounts:trusted_contacts' %}">Manage trusted contacts</a>
+    {% elif user.is_driver %}
+      <a class="btn btn-outline" href="{% url 'accounts:driver_verification' %}">Verification & documents</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Live Tracking — SafeDrive{% endblock %}
+{% block head %}
+<style>
+  .stepper { display:flex; align-items:flex-start; margin-bottom:22px; padding:18px 14px;
+    background:var(--bg-2); border:1px solid var(--border); border-radius:14px; }
+  .step { flex:1; display:flex; flex-direction:column; align-items:center; text-align:center; position:relative; }
+  .step .dot { width:30px; height:30px; border-radius:50%; background:var(--surface-2); border:2px solid var(--border-strong);
+    display:flex; align-items:center; justify-content:center; font-size:.85rem; font-weight:800; color:var(--muted);
+    transition:.25s var(--ease); z-index:1; }
+  .step .line { position:absolute; top:14px; left:calc(-50% + 15px); width:calc(100% - 30px); height:2px;
+    background:var(--border-strong); z-index:0; transition:.25s var(--ease); }
+  .step:first-child .line { display:none; }
+  .step .label { margin-top:8px; font-size:.76rem; color:var(--muted); font-weight:600; }
+  .step.done .dot { background:var(--accent); border-color:var(--accent); color:#06120c; }
+  .step.done .line { background:var(--accent); }
+  .step.active .dot { border-color:var(--accent); color:var(--accent); box-shadow:0 0 0 4px rgba(25,195,125,.16);
+    animation: pulse 1.4s ease-in-out infinite; }
+  .step.active .label { color:var(--fg); }
+  .step.done .label { color:var(--fg); }
+  .step.cancelled .dot { border-color:var(--danger); color:var(--danger); background:rgba(255,77,99,.1); }
+  .step.cancelled .label { color:var(--danger); }
+  @keyframes pulse { 0%,100% { box-shadow:0 0 0 4px rgba(25,195,125,.16); } 50% { box-shadow:0 0 0 8px rgba(25,195,125,.08); } }
+</style>
+{% endblock %}
+{% block content %}
+<div class="flex-between mb">
+  <div>
+    <h2 style="margin:0">{{ ride.pickup_location }} → {{ ride.destination }}</h2>
+    <p class="muted" style="margin:4px 0 0" id="ride-status-text">
+      {% if ride.eta_minutes %}ETA ~{{ ride.eta_minutes }} min{% endif %}
+    </p>
+    <span id="ride-status" style="display:none">{{ ride.status }}</span>
+  </div>
+  <div class="row">
+    {% if is_driver %}
+      {% if ride.status == 'accepted' %}
+      <form method="post" action="{% url 'rides:start_ride' ride.pk %}">{% csrf_token %}<button class="btn btn-success">Start ride</button></form>
+      {% elif ride.status == 'ongoing' %}
+      <form method="post" action="{% url 'rides:end_ride' ride.pk %}">{% csrf_token %}<button class="btn btn-warning">End ride</button></form>
+      {% endif %}
+    {% else %}
+      <a class="btn btn-outline" href="{% url 'rides:shared_trip' ride.share_token %}" target="_blank">🔗 Share trip</a>
+      <a class="btn btn-outline" href="{% url 'rides:report_ride' ride.pk %}">Report</a>
+      {% if ride.status == 'requested' or ride.status == 'accepted' or ride.status == 'ongoing' %}
+      <button type="button" class="btn btn-danger" id="cancel-open">Cancel ride</button>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+<div class="stepper" id="ride-stepper">
+  <div class="step" data-step="requested"><span class="line"></span><span class="dot">1</span><span class="label">Requested</span></div>
+  <div class="step" data-step="accepted"><span class="line"></span><span class="dot">2</span><span class="label">Driver on the way</span></div>
+  <div class="step" data-step="ongoing"><span class="line"></span><span class="dot">3</span><span class="label">In progress</span></div>
+  <div class="step" data-step="completed"><span class="line"></span><span class="dot">✓</span><span class="label">Completed</span></div>
+</div>
+
+{% if not is_driver %}
+<!-- Cancel modal -->
+<div id="cancel-modal" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.6);
+     align-items:center;justify-content:center;padding:20px">
+  <div class="card" style="max-width:440px;width:100%">
+    <h3 style="margin-top:0">Cancel this ride?</h3>
+    <p class="muted">Please let us know why you're cancelling — this helps keep the platform safe.</p>
+    <form method="post" action="{% url 'rides:cancel_ride' ride.pk %}">
+      {% csrf_token %}
+      <div class="field">
+        <label>Reason for cancelling</label>
+        <select name="reason" id="cancel-reason" required>
+          <option value="">Select a reason…</option>
+          <option>Driver is taking too long</option>
+          <option>I no longer need the ride</option>
+          <option>Booked by mistake</option>
+          <option>Driver asked me to cancel</option>
+          <option>I feel unsafe</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="field" id="other-wrap" style="display:none">
+        <label>Tell us more</label>
+        <input type="text" name="reason_other" placeholder="Your reason" />
+      </div>
+      <div class="row" style="justify-content:flex-end">
+        <button type="button" class="btn btn-outline" id="cancel-close">Keep ride</button>
+        <button type="submit" class="btn btn-danger">Cancel ride</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<div id="alert-banner" class="card" style="display:none;border-color:var(--danger);background:rgba(255,71,87,.12);margin-bottom:14px"></div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <div id="map" class="map"></div>
+  </div>
+  <div class="card">
+    <h3>Trip details</h3>
+    {% if ride.driver %}
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+      <img src="{{ ride.driver.avatar }}" alt="" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:1px solid var(--border-strong)" />
+      <div>
+        <strong>{{ ride.driver.name }}</strong>
+        {% if ride.driver.driver_profile %}<div class="muted" style="font-size:.9rem">{{ ride.driver.driver_profile.vehicle_type }} · {{ ride.driver.driver_profile.vehicle_number }}</div>{% endif %}
+      </div>
+      {% if ride.driver.driver_profile %}<img src="{{ ride.driver.driver_profile.vehicle_image }}" alt="" style="width:82px;height:56px;border-radius:8px;object-fit:cover;margin-left:auto" />{% endif %}
+    </div>
+    {% endif %}
+    <table>
+      <tr><th>Rider</th><td>{{ ride.rider.name }}</td></tr>
+      <tr><th>Driver</th><td>{{ ride.driver.name|default:"Awaiting driver" }}</td></tr>
+      {% if ride.driver.driver_profile %}
+      <tr><th>Vehicle</th><td>{{ ride.driver.driver_profile.vehicle_type }} · {{ ride.driver.driver_profile.vehicle_number }}</td></tr>
+      {% endif %}
+      <tr><th>Pickup</th><td>{{ ride.pickup_location }}</td></tr>
+      <tr><th>Destination</th><td>{{ ride.destination }}</td></tr>
+      {% if ride.fare %}<tr><th>Fare</th><td><strong>₦{{ ride.fare|floatformat:0 }}</strong>{% if ride.distance_km %} · {{ ride.distance_km }} km{% endif %}</td></tr>{% endif %}
+    </table>
+    {% if is_driver %}
+    <p class="muted mt">📡 Your location is being shared live with the rider and trusted contacts.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% if not is_driver %}
+<button id="sos-btn" class="sos-btn">SOS</button>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    const order = ["requested", "accepted", "ongoing", "completed"];
+    const steps = [...document.querySelectorAll("#ride-stepper .step")];
+    window.updateRideStepper = function (status) {
+      const statusText = document.getElementById("ride-status-text");
+      if (status === "cancelled" || status === "rejected") {
+        steps.forEach((s) => s.classList.remove("done", "active"));
+        const requestedStep = steps.find((s) => s.dataset.step === "requested");
+        if (requestedStep) requestedStep.classList.add("cancelled");
+        if (statusText) statusText.textContent = status === "cancelled" ? "Ride cancelled" : "Driver unavailable";
+        return;
+      }
+      const idx = order.indexOf(status);
+      steps.forEach((s, i) => {
+        s.classList.remove("done", "active", "cancelled");
+        if (i < idx || (i === idx && status === "completed")) s.classList.add("done");
+        else if (i === idx) s.classList.add("active");
+      });
+      if (statusText) {
+        statusText.textContent = {
+          requested: "Waiting for your driver to accept…",
+          accepted: "Your driver is on the way",
+          ongoing: "Trip in progress",
+          completed: "Trip completed",
+        }[status] || "";
+        {% if ride.eta_minutes %}
+        if (status === "requested" || status === "accepted") {
+          statusText.textContent += " · ETA ~{{ ride.eta_minutes }} min";
+        }
+        {% endif %}
+      }
+    };
+    window.updateRideStepper("{{ ride.status }}");
+  })();
+</script>
+<script>
+  window.RIDE_CONFIG = {
+    rideId: {{ ride.pk }},
+    wsScheme: location.protocol === "https:" ? "wss" : "ws",
+    host: location.host,
+    token: "",
+    canWrite: {{ is_driver|yesno:"true,false" }},
+    plannedRoute: {{ planned_route_json|safe }},
+    pickup: { lat: {{ ride.pickup_lat }}, lng: {{ ride.pickup_lng }} },
+    destination: { lat: {{ ride.destination_lat }}, lng: {{ ride.destination_lng }} },
+    rebookUrl: "{% url 'rides:request_ride' %}",
+    rateUrl: "{% url 'rides:rate' ride.pk %}",
+    simulate: {% if not is_driver and ride.is_active %}true{% else %}false{% endif %},
+  };
+</script>
+<script src="{% static 'js/tracking.js' %}"></script>
+{% if not is_driver %}
+<script>
+  window.SOS_CONFIG = { url: "{% url 'rides:sos' ride.pk %}", csrf: "{{ csrf_token }}" };
+
+  // Cancel modal
+  (function () {
+    const modal = document.getElementById("cancel-modal");
+    const openBtn = document.getElementById("cancel-open");
+    const closeBtn = document.getElementById("cancel-close");
+    const reason = document.getElementById("cancel-reason");
+    const otherWrap = document.getElementById("other-wrap");
+    if (!modal) return;
+    if (openBtn) openBtn.addEventListener("click", () => { modal.style.display = "flex"; });
+    if (closeBtn) closeBtn.addEventListener("click", () => { modal.style.display = "none"; });
+    modal.addEventListener("click", (e) => { if (e.target === modal) modal.style.display = "none"; });
+    if (reason) reason.addEventListener("change", () => {
+      otherWrap.style.display = reason.value === "Other" ? "block" : "none";
+    });
+  })();
+</script>
+<script src="{% static 'js/sos.js' %}"></script>
+{% endif %}
+{% endblock %}

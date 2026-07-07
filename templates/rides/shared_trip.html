@@ -1,0 +1,74 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live trip — SafeDrive</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+</head>
+<body>
+  <div class="bg-aurora"></div>
+  <div class="bg-grid"></div>
+  <nav class="nav"><div class="container nav-inner"><span class="brand">Safe<span>Drive</span></span>
+    <span class="nav-links"><span class="badge green">Live trip sharing</span></span></div></nav>
+
+  <main class="container section">
+    <div class="card mb">
+      <h2 style="margin:0 0 6px">{{ ride.rider.name }} is on a trip</h2>
+      <p class="muted">You're viewing this securely as a trusted contact — no account needed.
+        Status: <strong id="ride-status">{{ ride.get_status_display }}</strong>
+        {% if ride.eta_minutes %}· ETA ~{{ ride.eta_minutes }} min{% endif %}</p>
+    </div>
+
+    <div id="alert-banner" class="card" style="display:none;border-color:var(--danger);background:rgba(255,71,87,.12);margin-bottom:14px"></div>
+
+    <div class="grid grid-2">
+      <div class="card"><div id="map" class="map"></div></div>
+      <div class="card">
+        <h3>Trip details</h3>
+        {% if ride.driver %}
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+          <img src="{{ ride.driver.avatar }}" alt="" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:1px solid var(--border-strong)" />
+          <div>
+            <strong>{{ ride.driver.name }}</strong>
+            {% if driver_profile %}<div class="muted" style="font-size:.9rem">{{ driver_profile.vehicle_type }} · {{ driver_profile.vehicle_number }}</div>{% endif %}
+          </div>
+          {% if driver_profile %}<img src="{{ driver_profile.vehicle_image }}" alt="" style="width:80px;height:56px;border-radius:8px;object-fit:cover;margin-left:auto" />{% endif %}
+        </div>
+        {% endif %}
+        <table>
+          <tr><th>Rider</th><td>{{ ride.rider.name }}</td></tr>
+          <tr><th>Driver</th><td>{{ ride.driver.name|default:"—" }}</td></tr>
+          {% if driver_profile %}
+          <tr><th>Vehicle</th><td>{{ driver_profile.vehicle_type }} · {{ driver_profile.vehicle_number }}</td></tr>
+          {% endif %}
+          <tr><th>Pickup</th><td>{{ ride.pickup_location }}</td></tr>
+          <tr><th>Destination</th><td>{{ ride.destination }}</td></tr>
+          <tr><th>ETA</th><td>{% if ride.eta_minutes %}~{{ ride.eta_minutes }} min{% else %}—{% endif %}</td></tr>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    window.RIDE_CONFIG = {
+      rideId: {{ ride.pk }},
+      wsScheme: location.protocol === "https:" ? "wss" : "ws",
+      host: location.host,
+      token: "{{ share_token }}",
+      canWrite: false,
+      plannedRoute: {{ planned_route_json|safe }},
+      pickup: { lat: {{ ride.pickup_lat }}, lng: {{ ride.pickup_lng }} },
+      destination: { lat: {{ ride.destination_lat }}, lng: {{ ride.destination_lng }} },
+      simulate: {% if ride.is_active %}true{% else %}false{% endif %},
+    };
+  </script>
+  <script src="{% static 'js/tracking.js' %}"></script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Drivers — SafeDrive{% endblock %}
+{% block content %}
+<div class="flex-between mb">
+  <h2>Drivers</h2>
+  <a class="btn btn-outline" href="{% url 'dashboard:driver_management' %}">Verification queue</a>
+</div>
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Name</th><th>Email</th><th>Vehicle</th><th>Verification</th><th>Account</th><th></th></tr></thead>
+      <tbody>
+        {% for d in drivers %}
+        <tr>
+          <td>
+            <span style="display:inline-flex;align-items:center;gap:10px">
+              <img src="{{ d.avatar }}" alt="" style="width:34px;height:34px;border-radius:50%;object-fit:cover" />
+              {{ d.name }}
+            </span>
+          </td>
+          <td>{{ d.email }}</td>
+          <td>{% if d.driver_profile %}{{ d.driver_profile.vehicle_type }} · {{ d.driver_profile.vehicle_number }}{% else %}—{% endif %}</td>
+          <td>{% if d.driver_profile %}<span class="badge {% if d.driver_profile.verification_status == 'approved' %}green{% elif d.driver_profile.verification_status == 'pending' %}yellow{% else %}red{% endif %}">{{ d.driver_profile.get_verification_status_display }}</span>{% else %}—{% endif %}</td>
+          <td><span class="badge {% if d.status == 'active' %}green{% else %}red{% endif %}">{{ d.get_status_display }}</span></td>
+          <td>
+            <form method="post" action="{% url 'dashboard:toggle_user_suspension' d.pk %}">{% csrf_token %}
+              <button class="btn btn-sm {% if d.status == 'active' %}btn-danger{% else %}btn-success{% endif %}">
+                {% if d.status == 'active' %}Suspend{% else %}Reactivate{% endif %}
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}<tr><td colspan="6" class="muted">No drivers.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

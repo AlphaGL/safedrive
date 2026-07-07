@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard — SafeDrive{% endblock %}
+{% block content %}
+<h2>Admin dashboard</h2>
+<div class="grid grid-3 mb reveal">
+  <div class="stat"><div class="num">{{ stats.total_riders }}</div><div class="label">Total riders</div></div>
+  <div class="stat"><div class="num">{{ stats.total_drivers }}</div><div class="label">Total drivers</div></div>
+  <div class="stat"><div class="num">{{ stats.total_trips }}</div><div class="label">Total trips</div></div>
+  <div class="stat"><div class="num">{{ stats.active_trips }}</div><div class="label">Active trips</div></div>
+  <div class="stat alert"><div class="num">{{ stats.emergency_alerts }}</div><div class="label">Emergency alerts</div></div>
+  <div class="stat warn"><div class="num">{{ stats.pending_verifications }}</div><div class="label">Pending verifications</div></div>
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <div class="flex-between"><h3 style="margin:0">Recent alerts</h3><a href="{% url 'dashboard:emergency_center' %}">View all</a></div>
+    {% if recent_alerts %}
+    <div class="table-wrap"><table>
+      <thead><tr><th>Type</th><th>Rider</th><th>Status</th><th>Time</th></tr></thead>
+      <tbody>
+        {% for a in recent_alerts %}
+        <tr>
+          <td><span class="badge red">{{ a.get_kind_display }}</span></td>
+          <td>{{ a.rider.name }}</td>
+          <td><span class="badge {% if a.status == 'active' %}red{% elif a.status == 'resolved' %}green{% else %}yellow{% endif %}">{{ a.get_status_display }}</span></td>
+          <td>{{ a.created_at|date:"M d, H:i" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table></div>
+    {% else %}<p class="muted">No alerts. All clear.</p>{% endif %}
+  </div>
+
+  <div class="card">
+    <div class="flex-between"><h3 style="margin:0">Active trips</h3><a href="{% url 'dashboard:ride_monitoring' %}">Monitor map</a></div>
+    {% if active_rides %}
+    <div class="table-wrap"><table>
+      <thead><tr><th>Rider</th><th>Driver</th><th>Route</th><th></th></tr></thead>
+      <tbody>
+        {% for r in active_rides %}
+        <tr>
+          <td>{{ r.rider.name }}</td><td>{{ r.driver.name|default:"—" }}</td>
+          <td>{{ r.pickup_location }} → {{ r.destination }}</td>
+          <td><a class="btn btn-sm btn-outline" href="{% url 'dashboard:trip_logs' r.pk %}">Logs</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table></div>
+    {% else %}<p class="muted">No active trips.</p>{% endif %}
+  </div>
+</div>
+
+<div class="row mt">
+  <a class="btn btn-outline" href="{% url 'dashboard:manage_riders' %}">Riders</a>
+  <a class="btn btn-outline" href="{% url 'dashboard:manage_drivers' %}">Drivers</a>
+  <a class="btn btn-outline" href="{% url 'dashboard:ratings_list' %}">Ratings</a>
+  <a class="btn btn-outline" href="{% url 'dashboard:reports_list' %}">Reports</a>
+</div>
+{% endblock %}

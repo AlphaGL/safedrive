@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Driver Dashboard — SafeDrive{% endblock %}
+{% block content %}
+<div class="flex-between mb">
+  <h2>Driver dashboard</h2>
+  <div class="row">
+    <span class="badge {% if profile.is_approved %}green{% elif profile.verification_status == 'rejected' or profile.verification_status == 'suspended' %}red{% else %}yellow{% endif %}">
+      {{ profile.get_verification_status_display }}
+    </span>
+    {% if profile.is_approved %}
+    <button class="btn btn-sm btn-outline" id="online-toggle">{% if profile.is_online %}🟢 Online{% else %}⚪ Offline{% endif %}</button>
+    {% endif %}
+  </div>
+</div>
+
+{% if not profile.is_approved %}
+<div class="card mb">
+  <strong>Your account isn't verified yet.</strong>
+  <p class="muted">Upload your documents to start accepting rides.</p>
+  <a class="btn" href="{% url 'accounts:driver_verification' %}">Go to verification</a>
+</div>
+{% endif %}
+
+<div class="grid grid-3 mb reveal">
+  <div class="stat"><div class="num">{{ avg_rating|default:"—" }}</div><div class="label">Avg rating</div></div>
+  <div class="stat"><div class="num">{{ user.rides_as_driver.count }}</div><div class="label">Total trips</div></div>
+  <div class="stat"><div class="num">{% if current_ride %}1{% else %}0{% endif %}</div><div class="label">Active ride</div></div>
+</div>
+
+{% if current_ride %}
+<div class="card mb">
+  <div class="flex-between">
+    <div><h3 style="margin:0">Current ride</h3>
+      <p class="muted">{{ current_ride.pickup_location }} → {{ current_ride.destination }} · <span class="badge blue">{{ current_ride.get_status_display }}</span></p></div>
+    <a class="btn" href="{% url 'rides:track' current_ride.pk %}">Open & track</a>
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+  <h3>Incoming ride requests</h3>
+  {% if pending_requests %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Rider</th><th>Pickup</th><th>Destination</th><th>ETA</th><th></th></tr></thead>
+      <tbody>
+        {% for r in pending_requests %}
+        <tr>
+          <td>{{ r.rider.name }}</td><td>{{ r.pickup_location }}</td><td>{{ r.destination }}</td>
+          <td>{% if r.eta_minutes %}~{{ r.eta_minutes }} min{% else %}—{% endif %}</td>
+          <td class="row">
+            <form method="post" action="{% url 'rides:accept_ride' r.pk %}">{% csrf_token %}<button class="btn btn-sm btn-success">Accept</button></form>
+            <form method="post" action="{% url 'rides:reject_ride' r.pk %}">{% csrf_token %}<button class="btn btn-sm btn-outline">Reject</button></form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% elif profile.is_approved %}
+  <p class="muted">No pending requests right now.</p>
+  {% else %}
+  <p class="muted">Get verified to see ride requests.</p>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const btn = document.getElementById("online-toggle");
+  if (btn) btn.addEventListener("click", () => {
+    fetch("{% url 'rides:toggle_online' %}", { method: "POST", headers: { "X-CSRFToken": "{{ csrf_token }}" } })
+      .then((r) => r.json())
+      .then((d) => { btn.textContent = d.is_online ? "🟢 Online" : "⚪ Offline"; });
+  });
+
+  // Live incoming ride requests
+  {% if profile.is_approved %}
+  (function () {
+    function toast(msg) {
+      const t = document.getElementById("toast");
+      if (!t) return;
+      t.textContent = msg; t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 6000);
+    }
+    const scheme = location.protocol === "https:" ? "wss" : "ws";
+    function connect() {
+      const ws = new WebSocket(`${scheme}://${location.host}/ws/driver/requests/`);
+      ws.onmessage = (e) => {
+        const { request } = JSON.parse(e.data);
+        toast(`🚖 New ride request from ${request.rider}: ${request.pickup} → ${request.destination}`);
+        setTimeout(() => location.reload(), 1800); // refresh to show Accept/Reject
+      };
+      ws.onclose = () => setTimeout(connect, 3000);
+    }
+    connect();
+  })();
+  {% endif %}
+</script>
+{% endblock %}

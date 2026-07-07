@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Emergency Center — SafeDrive{% endblock %}
+{% block content %}
+<div class="flex-between mb">
+  <h2>🚨 Emergency center</h2>
+  <span class="badge red" id="live-indicator">● LIVE</span>
+</div>
+
+<div class="card" id="new-alerts" style="display:none;border-color:var(--danger);background:rgba(255,71,87,.12)"></div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Type</th><th>Rider</th><th>Driver</th><th>Location</th><th>Status</th><th>Time</th><th>Actions</th></tr></thead>
+      <tbody id="alerts-body">
+        {% for a in alerts %}
+        <tr>
+          <td><span class="badge red">{{ a.get_kind_display }}</span></td>
+          <td>{{ a.rider.name }}<br><span class="muted">{{ a.rider.phone }}</span></td>
+          <td>{% if a.ride.driver %}{{ a.ride.driver.name }}{% if a.ride.driver.driver_profile %}<br><span class="muted">{{ a.ride.driver.driver_profile.vehicle_number }}</span>{% endif %}{% else %}—{% endif %}</td>
+          <td>
+            {{ a.location|default:"—" }}
+            {% if a.latitude %}<br><a href="https://www.openstreetmap.org/?mlat={{ a.latitude }}&mlon={{ a.longitude }}" target="_blank">View map</a>{% endif %}
+          </td>
+          <td><span class="badge {% if a.status == 'active' %}red{% elif a.status == 'resolved' %}green{% else %}yellow{% endif %}">{{ a.get_status_display }}</span></td>
+          <td>{{ a.created_at|date:"M d, H:i" }}</td>
+          <td class="row">
+            {% if a.ride %}<a class="btn btn-sm btn-outline" href="{% url 'rides:track' a.ride.pk %}">Track</a>{% endif %}
+            <form method="post" action="{% url 'dashboard:update_alert_status' a.pk 'acknowledged' %}">{% csrf_token %}<button class="btn btn-sm btn-warning">Ack</button></form>
+            <form method="post" action="{% url 'dashboard:update_alert_status' a.pk 'resolved' %}">{% csrf_token %}<button class="btn btn-sm btn-success">Resolve</button></form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="muted">No emergency alerts. All clear.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const scheme = location.protocol === "https:" ? "wss" : "ws";
+  function connect() {
+    const ws = new WebSocket(`${scheme}://${location.host}/ws/admin/alerts/`);
+    ws.onmessage = (e) => {
+      const { alert } = JSON.parse(e.data);
+      const box = document.getElementById("new-alerts");
+      box.style.display = "block";
+      box.innerHTML = `<strong>🚨 NEW ${alert.kind}</strong> from ${alert.rider} ${alert.location || ""} — <a href="javascript:location.reload()">refresh to view</a>`;
+      try { new Audio("data:audio/wav;base64,UklGRl9v...").play(); } catch (_) {}
+    };
+    ws.onclose = () => setTimeout(connect, 3000);
+  }
+  connect();
+</script>
+{% endblock %}

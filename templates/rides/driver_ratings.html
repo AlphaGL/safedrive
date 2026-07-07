@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}My Ratings — SafeDrive{% endblock %}
+{% block content %}
+<div class="flex-between mb">
+  <h2>My ratings</h2>
+  <div class="stat" style="min-width:140px"><div class="num">⭐ {{ avg_rating|default:"—" }}</div><div class="label">Average</div></div>
+</div>
+<div class="card">
+  {% if ratings %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Score</th><th>Review</th><th>Rider</th><th>Date</th></tr></thead>
+      <tbody>
+        {% for r in ratings %}
+        <tr>
+          <td>{% for i in "12345" %}{% if forloop.counter <= r.score %}⭐{% else %}·{% endif %}{% endfor %}</td>
+          <td>{{ r.review|default:"—" }}</td>
+          <td>{{ r.rider.name }}</td>
+          <td>{{ r.created_at|date:"M d, Y" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state"><div class="icon">⭐</div><div class="title">No ratings yet</div><p>Ratings from riders will appear here after your first completed trip.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

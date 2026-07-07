@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Report an Incident — SafeDrive{% endblock %}
+{% block content %}
+<div style="max-width:560px;margin:0 auto">
+  <div class="card">
+    <h2>Report an incident</h2>
+    {% if ride %}<p class="muted">Trip: {{ ride.pickup_location }} → {{ ride.destination }}</p>{% endif %}
+    <p class="muted">Tell us what happened. Serious safety issues are escalated to our team immediately.</p>
+    <form method="post">
+      {% csrf_token %}
+      {% include "partials/_form_fields.html" %}
+      <button class="btn btn-block btn-danger" type="submit">Submit report</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

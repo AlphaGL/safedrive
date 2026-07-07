@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Rate your trip — SafeDrive{% endblock %}
+{% block head %}
+<style>
+  .stars { display:flex; gap:8px; justify-content:center; margin:8px 0 6px; }
+  .stars span { font-size:2.6rem; cursor:pointer; color:var(--border-strong); transition:.12s var(--ease); line-height:1; }
+  .stars span.on { color:var(--warning); }
+  .stars span:hover { transform:scale(1.12); }
+  .rate-label { text-align:center; color:var(--muted); min-height:1.4em; font-weight:600; }
+  .driver-head { display:flex; align-items:center; gap:14px; justify-content:center; margin-bottom:6px; }
+  .driver-head img { width:64px; height:64px; border-radius:50%; object-fit:cover; border:1px solid var(--border-strong); }
+</style>
+{% endblock %}
+{% block content %}
+<div style="max-width:460px;margin:0 auto">
+  <div class="card">
+    <div class="driver-head">
+      {% if ride.driver %}<img src="{{ ride.driver.avatar }}" alt="" />{% endif %}
+      <div>
+        <h2 style="margin:0">Rate your trip</h2>
+        <p class="muted" style="margin:2px 0 0">{{ ride.driver.name }} · {{ ride.pickup_location }} → {{ ride.destination }}</p>
+      </div>
+    </div>
+
+    <form method="post" id="rating-form">
+      {% csrf_token %}
+      <div class="stars" id="stars">
+        <span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span>
+        <span data-v="4">★</span><span data-v="5">★</span>
+      </div>
+      <div class="rate-label" id="rate-label">Tap a star to rate</div>
+      <input type="hidden" name="score" id="score" required />
+
+      <div class="field mt">
+        <label>Add a review (optional)</label>
+        {{ form.review }}
+      </div>
+      {% if form.score.errors %}<ul class="errorlist">{% for e in form.score.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      <button class="btn btn-block" type="submit" id="submit-rating" disabled>Submit rating</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  (function () {
+    const labels = { 1: "Poor 😕", 2: "Fair 😐", 3: "Good 🙂", 4: "Great 😃", 5: "Excellent 🤩" };
+    const stars = [...document.querySelectorAll("#stars span")];
+    const scoreInput = document.getElementById("score");
+    const label = document.getElementById("rate-label");
+    const submit = document.getElementById("submit-rating");
+    let current = 0;
+    function paint(v) { stars.forEach((s) => s.classList.toggle("on", +s.dataset.v <= v)); }
+    stars.forEach((s) => {
+      s.addEventListener("mouseenter", () => paint(+s.dataset.v));
+      s.addEventListener("mouseleave", () => paint(current));
+      s.addEventListener("click", () => {
+        current = +s.dataset.v; scoreInput.value = current;
+        paint(current); label.textContent = labels[current]; submit.disabled = false;
+      });
+    });
+  })();
+</script>
+{% endblock %}

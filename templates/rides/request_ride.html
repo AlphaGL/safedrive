@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+{% block title %}Request a Ride — SafeDrive{% endblock %}
+{% block head %}
+<style>
+  .booking-grid { display: grid; grid-template-columns: 400px 1fr; gap: 20px; }
+  @media (max-width: 900px) { .booking-grid { grid-template-columns: 1fr; } }
+  .field-wrap { position: relative; margin-bottom: 14px; }
+  .field-wrap .dot { position:absolute; left:14px; top:42px; width:9px; height:9px; border-radius:50%; }
+  .field-wrap.pickup .dot { background:var(--accent); }
+  .field-wrap.dest .dot { background:var(--danger); border-radius:2px; }
+  .field-wrap input { padding-left: 32px; }
+  .suggestions { position:absolute; z-index:1000; left:0; right:0; top:calc(100% + 4px);
+    background:var(--surface-solid); border:1px solid var(--border-strong); border-radius:12px;
+    overflow:hidden; box-shadow:var(--shadow); display:none; max-height:260px; overflow-y:auto; }
+  .suggestions.show { display:block; }
+  .suggestions div { padding:11px 14px; cursor:pointer; font-size:.9rem; border-bottom:1px solid var(--border); }
+  .suggestions div:last-child { border-bottom:none; }
+  .suggestions div:hover { background:var(--surface-2); }
+  .suggestions .muted { color:var(--muted); font-size:.78rem; }
+
+  .fare-card { display:none; background:var(--bg-2); border:1px solid var(--border-strong);
+    border-radius:14px; padding:14px 16px; margin-bottom:14px; }
+  .fare-card.show { display:block; }
+  .fare-row { display:flex; justify-content:space-between; align-items:baseline; }
+  .fare-row .price { font-size:1.7rem; font-weight:800; letter-spacing:-1px; }
+  .fare-meta { color:var(--muted); font-size:.85rem; margin-top:4px; }
+
+  .safety-note { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:.82rem; margin-bottom:10px; }
+  .driver-card { cursor:pointer; padding:10px 12px; border:1px solid var(--border); border-radius:12px;
+    margin-bottom:9px; display:flex; align-items:center; gap:11px; transition:.15s var(--ease); background:var(--bg-2); }
+  .driver-card:hover { border-color:var(--border-strong); }
+  .driver-card.selected { border-color:var(--accent); box-shadow:0 0 0 3px rgba(25,195,125,.18); background:rgba(25,195,125,.06); }
+  .driver-card .avatar { width:44px; height:44px; border-radius:50%; object-fit:cover; flex:0 0 auto; border:1px solid var(--border-strong); }
+  .driver-card .car { width:54px; height:40px; border-radius:8px; object-fit:cover; flex:0 0 auto; }
+  .driver-card .info { flex:1; min-width:0; }
+  .driver-card .info .badges { display:flex; gap:6px; margin-top:3px; flex-wrap:wrap; }
+  .mini { font-size:.68rem; font-weight:700; padding:2px 7px; border-radius:6px; }
+  .mini.v { color:var(--accent); background:rgba(25,195,125,.12); }
+  .mini.r { color:var(--warning); background:rgba(230,162,60,.12); }
+  .mini.t { color:var(--muted); background:rgba(255,255,255,.05); }
+  .driver-card .pick { color:var(--accent); font-weight:800; font-size:1rem; flex:0 0 auto; opacity:0; }
+  .driver-card.selected .pick { opacity:1; }
+  #map { height: 600px; }
+  @media (max-width: 900px) { #map { height: 340px; } }
+</style>
+{% endblock %}
+{% block content %}
+<div class="mb">
+  <h2 style="margin:0">Where to?</h2>
+  <p class="muted" style="margin:4px 0 0">Start typing an address — we'll suggest places and drop the pin for you.</p>
+</div>
+
+<div class="booking-grid">
+  <div class="card">
+    <form method="post" id="ride-form" autocomplete="off">
+      {% csrf_token %}
+
+      <div class="field-wrap pickup">
+        <label>Pickup</label>
+        <span class="dot"></span>
+        <input type="text" name="pickup_location" id="pickup_location" placeholder="Detecting your location…" />
+        <div class="suggestions" id="pickup_sugg"></div>
+      </div>
+
+      <div class="field-wrap dest">
+        <label>Where to?</label>
+        <span class="dot"></span>
+        <input type="text" name="destination" id="destination" placeholder="Enter destination" />
+        <div class="suggestions" id="dest_sugg"></div>
+      </div>
+
+      <div class="fare-card" id="fare-card">
+        <div class="fare-row">
+          <span class="muted">Estimated fare</span>
+          <span class="price" id="fare-price">—</span>
+        </div>
+        <div class="fare-meta" id="fare-meta"></div>
+      </div>
+
+      <div class="safety-note">🛡️ Drivers below are <strong>verified &amp; online</strong>, ranked safety-first.</div>
+      <div id="drivers-list"><p class="muted" style="margin:0">Set pickup &amp; destination to see available drivers.</p></div>
+
+      {{ form.pickup_lat }}{{ form.pickup_lng }}{{ form.destination_lat }}{{ form.destination_lng }}
+      <input type="hidden" name="driver_id" id="driver_id" />
+
+      <button class="btn btn-block mt" type="submit" id="submit-btn" disabled>Enter pickup &amp; destination</button>
+    </form>
+  </div>
+
+  <div class="card" style="padding:14px">
+    <div id="map" class="map"></div>
+    <div class="muted" style="font-size:.8rem;margin-top:8px" id="map-hint">Your route appears here.</div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const LAGOS = [6.5244, 3.3792];
+  const map = L.map("map", { zoomControl: true, attributionControl: false }).setView(LAGOS, 12);
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+    maxZoom: 20, subdomains: "abcd",
+  }).addTo(map);
+  L.control.attribution({ prefix: false, position: "bottomright" })
+    .addAttribution("&copy; OpenStreetMap &copy; CARTO").addTo(map);
+
+  const el = {
+    plat: document.getElementById("id_pickup_lat"), plng: document.getElementById("id_pickup_lng"),
+    dlat: document.getElementById("id_destination_lat"), dlng: document.getElementById("id_destination_lng"),
+    driver: document.getElementById("driver_id"),
+    pickupInput: document.getElementById("pickup_location"),
+    destInput: document.getElementById("destination"),
+    submit: document.getElementById("submit-btn"),
+    hint: document.getElementById("map-hint"),
+    fareCard: document.getElementById("fare-card"),
+    farePrice: document.getElementById("fare-price"),
+    fareMeta: document.getElementById("fare-meta"),
+  };
+
+  const pickIcon = L.divIcon({
+    className: "ride-pin",
+    html: '<div class="pin-dot pin-pickup"><span></span></div>',
+    iconSize: [22, 22], iconAnchor: [11, 11],
+  });
+  const flagIcon = L.divIcon({
+    className: "ride-pin",
+    html: '<div class="pin-flag"><svg width="26" height="34" viewBox="0 0 26 34"><path d="M13 34c-.6-4.4-2.2-7.7-4.8-11C4.7 18.8 2 15.6 2 11a11 11 0 0 1 22 0c0 4.6-2.7 7.8-6.2 12-2.6 3.3-4.2 6.6-4.8 11z" fill="#1a1a1a"/><circle cx="13" cy="11" r="6.5" fill="#fff"/></svg></div>',
+    iconSize: [26, 34], iconAnchor: [13, 34],
+  });
+  let pickupMarker = null, destMarker = null, routeLine = null, driverMarkers = [];
+
+  function drawRoute() {
+    if (routeLine) { routeLine.forEach((l) => map.removeLayer(l)); routeLine = null; }
+    if (el.plat.value && el.dlat.value) {
+      const pts = [[+el.plat.value, +el.plng.value], [+el.dlat.value, +el.dlng.value]];
+      routeLine = [
+        L.polyline(pts, { color: "#0a5cff", weight: 9, opacity: 0.16, lineCap: "round" }).addTo(map),
+        L.polyline(pts, { color: "#1e6bff", weight: 5, opacity: 0.95, lineCap: "round" }).addTo(map),
+      ];
+      map.fitBounds(L.polyline(pts).getBounds().pad(0.35));
+    }
+  }
+
+  function updateUI() {
+    const ready = el.plat.value && el.dlat.value && el.driver.value;
+    el.submit.disabled = !ready;
+    el.submit.textContent = ready ? "Request ride →"
+      : !el.plat.value ? "Enter pickup location"
+      : !el.dlat.value ? "Enter destination"
+      : "Choose a driver";
+  }
+
+  function afterPointsChange() {
+    drawRoute(); updateUI();
+    if (el.plat.value && el.dlat.value) { fetchFare(); loadDrivers(); }
+  }
+
+  function fetchFare() {
+    fetch(`{% url 'rides:fare_estimate' %}?plat=${el.plat.value}&plng=${el.plng.value}&dlat=${el.dlat.value}&dlng=${el.dlng.value}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.error) return;
+        el.fareCard.classList.add("show");
+        el.farePrice.textContent = "₦" + d.fare.toLocaleString();
+        el.fareMeta.textContent = `${d.distance_km} km · about ${d.eta_minutes} min`;
+      });
+  }
+
+  function setPickup(lat, lng, name) {
+    if (pickupMarker) map.removeLayer(pickupMarker);
+    pickupMarker = L.marker([lat, lng], { icon: pickIcon }).addTo(map).bindPopup("Pickup");
+    el.plat.value = (+lat).toFixed(6); el.plng.value = (+lng).toFixed(6);
+    if (name) el.pickupInput.value = name;
+    afterPointsChange();
+  }
+  function setDestination(lat, lng, name) {
+    if (destMarker) map.removeLayer(destMarker);
+    destMarker = L.marker([lat, lng], { icon: flagIcon }).addTo(map).bindPopup("Destination");
+    el.dlat.value = (+lat).toFixed(6); el.dlng.value = (+lng).toFixed(6);
+    if (name) el.destInput.value = name;
+    afterPointsChange();
+  }
+
+  // ---- Autocomplete (OpenStreetMap Nominatim) ----
+  function shortName(display) { return display.split(",").slice(0, 3).join(",").trim(); }
+  function attachAutocomplete(input, boxId, onSelect) {
+    const box = document.getElementById(boxId);
+    let timer = null;
+    input.addEventListener("input", () => {
+      clearTimeout(timer);
+      const q = input.value.trim();
+      if (q.length < 3) { box.classList.remove("show"); return; }
+      timer = setTimeout(async () => {
+        try {
+          const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=6&countrycodes=ng&q=${encodeURIComponent(q)}`);
+          const results = await r.json();
+          if (!results.length) { box.classList.remove("show"); return; }
+          box.innerHTML = results.map((res, i) => {
+            const parts = res.display_name.split(",");
+            return `<div data-i="${i}"><strong>${parts[0]}</strong><div class="muted">${parts.slice(1, 4).join(",").trim()}</div></div>`;
+          }).join("");
+          box.classList.add("show");
+          box.querySelectorAll("div[data-i]").forEach((row) => {
+            row.addEventListener("click", () => {
+              const res = results[+row.dataset.i];
+              onSelect({ lat: +res.lat, lng: +res.lon, name: shortName(res.display_name) });
+              box.classList.remove("show");
+            });
+          });
+        } catch (_) { box.classList.remove("show"); }
+      }, 350);
+    });
+    document.addEventListener("click", (e) => { if (!input.parentElement.contains(e.target)) box.classList.remove("show"); });
+  }
+  attachAutocomplete(el.pickupInput, "pickup_sugg", (p) => { map.setView([p.lat, p.lng], 15); setPickup(p.lat, p.lng, p.name); });
+  attachAutocomplete(el.destInput, "dest_sugg", (p) => setDestination(p.lat, p.lng, p.name));
+
+  // ---- Drivers ----
+  function stars(n) { let s = ""; for (let i = 1; i <= 5; i++) s += i <= Math.round(n) ? "★" : "☆"; return s; }
+  function selectDriver(id, card) {
+    el.driver.value = id;
+    document.querySelectorAll(".driver-card").forEach((c) => c.classList.remove("selected"));
+    card.classList.add("selected"); updateUI();
+  }
+  function loadDrivers() {
+    const box = document.getElementById("drivers-list");
+    box.innerHTML = '<p class="muted" style="margin:0">Finding online drivers…</p>';
+    fetch(`{% url 'rides:available_drivers' %}?lat=${el.plat.value}&lng=${el.plng.value}`)
+      .then((r) => r.json())
+      .then((d) => {
+        driverMarkers.forEach((m) => map.removeLayer(m)); driverMarkers = [];
+        if (!d.drivers.length) { box.innerHTML = '<p class="muted" style="margin:0">No online drivers available right now. Please try again shortly.</p>'; return; }
+        box.innerHTML = "";
+        d.drivers.forEach((dr) => {
+          const card = document.createElement("div");
+          card.className = "driver-card";
+          card.innerHTML = `
+            <img class="avatar" src="${dr.avatar}" alt="" />
+            <div class="info">
+              <strong>${dr.name}</strong>
+              <div class="meta muted" style="font-size:.8rem">${dr.vehicle}${dr.distance_m ? " · " + (dr.distance_m/1000).toFixed(1) + " km" : ""}</div>
+              <div class="badges">
+                <span class="mini v">✓ Verified</span>
+                <span class="mini r">${dr.rating ? stars(dr.rating) + " " + dr.rating : "New driver"}</span>
+                <span class="mini t">${dr.trips} trips</span>
+              </div>
+            </div>
+            <img class="car" src="${dr.vehicle_image}" alt="" />
+            <div class="pick">✓</div>`;
+          card.addEventListener("click", () => selectDriver(dr.id, card));
+          box.appendChild(card);
+          const m = L.marker([dr.lat, dr.lng], {
+            title: dr.name,
+            icon: L.divIcon({
+              className: "car-icon-wrap",
+              html: '<div class="car-marker"><svg width="26" height="26" viewBox="0 0 30 30"><circle cx="15" cy="15" r="14" fill="#fff" stroke="#0a5cff" stroke-width="1.5"/><path d="M15 6l6 12H9l6-12z" fill="#0a5cff"/></svg></div>',
+              iconSize: [26, 26], iconAnchor: [13, 13],
+            }),
+          }).addTo(map).bindPopup(`${dr.name}<br>${dr.vehicle}`);
+          m.on("click", () => selectDriver(dr.id, card));
+          driverMarkers.push(m);
+        });
+      })
+      .catch(() => { box.innerHTML = '<p class="muted" style="margin:0">Could not load drivers. Try again.</p>'; });
+  }
+
+  // ---- Auto-detect pickup on load (reverse geocode) ----
+  async function reverseGeocode(lat, lng) {
+    try {
+      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16`);
+      const d = await r.json();
+      return d.name || (d.display_name ? shortName(d.display_name) : "");
+    } catch (_) { return ""; }
+  }
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        map.setView([latitude, longitude], 15);
+        const name = await reverseGeocode(latitude, longitude);
+        setPickup(latitude, longitude, name || "My current location");
+        el.destInput.focus();
+      },
+      () => { el.pickupInput.placeholder = "Enter pickup location"; },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  } else {
+    el.pickupInput.placeholder = "Enter pickup location";
+  }
+  updateUI();
+})();
+</script>
+{% endblock %}

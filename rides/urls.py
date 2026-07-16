@@ -12,6 +12,7 @@ urlpatterns = [
     path("fare-estimate/", views.fare_estimate, name="fare_estimate"),
     path("track/<int:pk>/", views.track_ride, name="track"),
     path("sos/<int:pk>/", views.sos, name="sos"),
+    path("deviation/<int:pk>/", views.report_deviation, name="report_deviation"),
     path("cancel/<int:pk>/", views.cancel_ride, name="cancel_ride"),
     path("history/", views.trip_history, name="trip_history"),
     path("rate/<int:pk>/", views.rate_ride, name="rate"),

@@ -54,15 +54,10 @@
 
   <main class="container section">
     {% if messages %}
-<<<<<<< HEAD
+
       <ul class="messages" id="django-messages">
         {% for message in messages %}
           <li class="{{ message.tags }}"><span>{{ message }}</span><button type="button" class="msg-close" aria-label="Dismiss">&times;</button></li>
-=======
-      <ul class="messages">
-        {% for message in messages %}
-          <li class="{{ message.tags }}">{{ message }}</li>
->>>>>>> 3b4da265b9e6343f66681dd946ef6089191e86dd
         {% endfor %}
       </ul>
     {% endif %}
@@ -87,7 +82,7 @@
       }, { threshold: 0.12 });
       els.forEach((e) => io.observe(e));
     })();
-<<<<<<< HEAD
+
 
     // Highlight the current page in the nav.
     (function () {
@@ -127,8 +122,6 @@
         btn.innerHTML = '<span class="btn-spinner"></span>' + (btn.dataset.busyText || "Please wait…");
       });
     })();
-=======
->>>>>>> 3b4da265b9e6343f66681dd946ef6089191e86dd
   </script>
   {% block scripts %}{% endblock %}
 </body>

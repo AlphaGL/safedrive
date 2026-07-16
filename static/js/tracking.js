@@ -7,7 +7,7 @@
   const cfg = window.RIDE_CONFIG;
   if (!cfg) return;
 
-<<<<<<< HEAD
+
   const map = L.map("map", { zoomControl: true, attributionControl: false });
   // A clean, muted basemap (like Uber/Bolt use) instead of default OSM styling.
   L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
@@ -16,18 +16,11 @@
   }).addTo(map);
   L.control.attribution({ prefix: false, position: "bottomright" })
     .addAttribution("&copy; OpenStreetMap &copy; CARTO").addTo(map);
-=======
-  const map = L.map("map");
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: "&copy; OpenStreetMap",
-  }).addTo(map);
->>>>>>> 3b4da265b9e6343f66681dd946ef6089191e86dd
 
   const pickup = cfg.pickup;
   const dest = cfg.destination;
 
-<<<<<<< HEAD
+
   // --- Uber/Bolt-style pin icons ---
   const pickupIcon = L.divIcon({
     className: "ride-pin",
@@ -98,33 +91,90 @@
       }
     }
     lastLatLng = latlng;
-=======
-  // Markers for pickup, destination, vehicle.
-  const pickupMarker = L.marker([pickup.lat, pickup.lng]).addTo(map).bindPopup("Pickup");
-  const destMarker = L.marker([dest.lat, dest.lng]).addTo(map).bindPopup("Destination");
-
-  // Planned route (dashed) + actual travelled path (solid).
-  if (cfg.plannedRoute && cfg.plannedRoute.length) {
-    L.polyline(cfg.plannedRoute, { color: "#9aa3c0", dashArray: "6 8", weight: 3 }).addTo(map);
-  }
-  const actualPath = L.polyline([], { color: "#4f7cff", weight: 4 }).addTo(map);
-
-  const carIcon = L.divIcon({
-    html: '<div style="font-size:26px">🚗</div>',
-    className: "car-icon",
-    iconSize: [26, 26],
-  });
-  let vehicleMarker = null;
-
-  function setVehicle(lat, lng, trace) {
-    const latlng = [lat, lng];
-    if (!vehicleMarker) {
-      vehicleMarker = L.marker(latlng, { icon: carIcon }).addTo(map).bindPopup("Vehicle");
-    } else {
-      vehicleMarker.setLatLng(latlng);
-    }
->>>>>>> 3b4da265b9e6343f66681dd946ef6089191e86dd
     if (trace !== false) actualPath.addLatLng(latlng);
+    checkDeviation(lat, lng);
+  }
+
+  // --- Route deviation detection (passenger safety) ---
+  // Compares the vehicle's live position against the planned route and warns
+  // the passenger if the driver strays too far from it.
+  const DEVIATION_ON = 350;   // metres off-route to raise a warning
+  const DEVIATION_OFF = 180;  // metres to consider "back on route" (hysteresis)
+  let offRoute = false, deviationReported = false;
+
+  function haversineM(aLat, aLng, bLat, bLng) {
+    const R = 6371000, toRad = (d) => (d * Math.PI) / 180;
+    const dLat = toRad(bLat - aLat), dLng = toRad(bLng - aLng);
+    const s = Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(s));
+  }
+  function distanceToRouteM(lat, lng) {
+    const route = (cfg.plannedRoute && cfg.plannedRoute.length)
+      ? cfg.plannedRoute : [[pickup.lat, pickup.lng], [dest.lat, dest.lng]];
+    let min = Infinity;
+    for (const p of route) { const d = haversineM(lat, lng, p[0], p[1]); if (d < min) min = d; }
+    return min;
+  }
+  function checkDeviation(lat, lng) {
+    const d = distanceToRouteM(lat, lng);
+    if (!offRoute && d > DEVIATION_ON) { offRoute = true; onDeviation(lat, lng, d); }
+    else if (offRoute && d < DEVIATION_OFF) { offRoute = false; onBackOnRoute(); }
+    else if (offRoute) { showDeviationBanner(Math.round(d)); }
+  }
+  function beep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = "sine"; o.frequency.value = 880; o.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(0.12, ctx.currentTime); o.start();
+      o.stop(ctx.currentTime + 0.25);
+    } catch (_) {}
+  }
+  function showDeviationBanner(meters) {
+    const b = document.getElementById("deviation-banner");
+    if (!b) return;
+    b.innerHTML = `🧭 <strong>Route deviation detected</strong> — your driver is about ${meters} m off the planned route. `
+      + `Stay alert. If you feel unsafe, use the <strong>SOS</strong> button.`;
+    b.style.display = "block";
+  }
+  function onDeviation(lat, lng, d) {
+    actualPath.setStyle({ color: "#eb4d4b" });
+    showDeviationBanner(Math.round(d));
+    beep();
+    // Record on the server (notifies admin + trusted contacts). Rider/driver only.
+    if (cfg.deviationUrl && cfg.csrf && !deviationReported) {
+      deviationReported = true;
+      const body = new URLSearchParams();
+      body.append("lat", lat); body.append("lng", lng); body.append("distance", Math.round(d));
+      fetch(cfg.deviationUrl, {
+        method: "POST",
+        headers: { "X-CSRFToken": cfg.csrf, "Content-Type": "application/x-www-form-urlencoded" },
+        body,
+      }).catch(() => {});
+    }
+  }
+  function onBackOnRoute() {
+    actualPath.setStyle({ color: "#0a5cff" });
+    const b = document.getElementById("deviation-banner");
+    if (b) b.style.display = "none";
+    deviationReported = false;
+  }
+
+  // Demo helper: nudge the vehicle progressively off-route so the deviation
+  // alert can be witnessed without a second device.
+  function demoDeviate() {
+    realReceived = true; stopSimulation();
+    const route = (cfg.plannedRoute && cfg.plannedRoute.length > 1)
+      ? cfg.plannedRoute : [[pickup.lat, pickup.lng], [dest.lat, dest.lng]];
+    const mid = route[Math.floor(route.length / 2)];
+    let step = 0;
+    clearInterval(window._demoTimer);
+    window._demoTimer = setInterval(() => {
+      step++;
+      setVehicle(mid[0] + 0.0025 * step, mid[1] + 0.0016 * step);
+      if (step >= 6) clearInterval(window._demoTimer);
+    }, 650);
   }
 
   map.fitBounds(L.latLngBounds([pickup.lat, pickup.lng], [dest.lat, dest.lng]).pad(0.3));
@@ -195,10 +245,8 @@
   }
 
   function handleStatus(status) {
-<<<<<<< HEAD
+
     if (window.updateRideStepper) window.updateRideStepper(status);
-=======
->>>>>>> 3b4da265b9e6343f66681dd946ef6089191e86dd
     const banner = document.getElementById("alert-banner");
     if (!banner) return;
     if (status === "accepted" || status === "ongoing") {
@@ -247,5 +295,5 @@
     );
   }
 
-  window.SafeDriveMap = { map, setVehicle };
+  window.SafeDriveMap = { map, setVehicle, demoDeviate };
 })();

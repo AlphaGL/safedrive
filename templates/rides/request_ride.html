@@ -98,19 +98,13 @@
 <script>
 (function () {
   const LAGOS = [6.5244, 3.3792];
-<<<<<<< HEAD
+
   const map = L.map("map", { zoomControl: true, attributionControl: false }).setView(LAGOS, 12);
   L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
     maxZoom: 20, subdomains: "abcd",
   }).addTo(map);
   L.control.attribution({ prefix: false, position: "bottomright" })
     .addAttribution("&copy; OpenStreetMap &copy; CARTO").addTo(map);
-=======
-  const map = L.map("map").setView(LAGOS, 12);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19, attribution: "&copy; OpenStreetMap",
-  }).addTo(map);
->>>>>>> 3b4da265b9e6343f66681dd946ef6089191e86dd
 
   const el = {
     plat: document.getElementById("id_pickup_lat"), plng: document.getElementById("id_pickup_lng"),
@@ -125,7 +119,7 @@
     fareMeta: document.getElementById("fare-meta"),
   };
 
-<<<<<<< HEAD
+
   const pickIcon = L.divIcon({
     className: "ride-pin",
     html: '<div class="pin-dot pin-pickup"><span></span></div>',
@@ -147,18 +141,6 @@
         L.polyline(pts, { color: "#1e6bff", weight: 5, opacity: 0.95, lineCap: "round" }).addTo(map),
       ];
       map.fitBounds(L.polyline(pts).getBounds().pad(0.35));
-=======
-  const pickIcon = L.divIcon({ html: "📍", className: "pin", iconSize: [24, 24], iconAnchor: [12, 22] });
-  const flagIcon = L.divIcon({ html: "🏁", className: "pin", iconSize: [24, 24], iconAnchor: [12, 22] });
-  let pickupMarker = null, destMarker = null, routeLine = null, driverMarkers = [];
-
-  function drawRoute() {
-    if (routeLine) { map.removeLayer(routeLine); routeLine = null; }
-    if (el.plat.value && el.dlat.value) {
-      routeLine = L.polyline([[+el.plat.value, +el.plng.value], [+el.dlat.value, +el.dlng.value]],
-        { color: "#19c37d", weight: 4, opacity: 0.85, dashArray: "2 8" }).addTo(map);
-      map.fitBounds(routeLine.getBounds().pad(0.35));
->>>>>>> 3b4da265b9e6343f66681dd946ef6089191e86dd
     }
   }
 
@@ -270,7 +252,7 @@
             <div class="pick">✓</div>`;
           card.addEventListener("click", () => selectDriver(dr.id, card));
           box.appendChild(card);
-<<<<<<< HEAD
+
           const m = L.marker([dr.lat, dr.lng], {
             title: dr.name,
             icon: L.divIcon({
@@ -279,9 +261,6 @@
               iconSize: [26, 26], iconAnchor: [13, 13],
             }),
           }).addTo(map).bindPopup(`${dr.name}<br>${dr.vehicle}`);
-=======
-          const m = L.marker([dr.lat, dr.lng], { title: dr.name }).addTo(map).bindPopup(`${dr.name}<br>${dr.vehicle}`);
->>>>>>> 3b4da265b9e6343f66681dd946ef6089191e86dd
           m.on("click", () => selectDriver(dr.id, card));
           driverMarkers.push(m);
         });

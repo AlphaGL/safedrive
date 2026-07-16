@@ -57,6 +57,7 @@ def raise_safety_alert(ride, kind, message, lat=None, lng=None):
         message=message,
     )
     dispatch_alert(alert)
+    _broadcast_alert_to_ride(ride, alert)  # so all ride viewers see it too
     return alert
 
 

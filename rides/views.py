@@ -12,7 +12,12 @@ from accounts.models import DriverProfile, User
 
 from .forms import IncidentReportForm, RatingForm, RideRequestForm
 from .models import EmergencyAlert, Rating, Ride
-from .services import broadcast_ride_status, create_sos, notify_driver_of_request
+from .services import (
+    broadcast_ride_status,
+    create_sos,
+    notify_driver_of_request,
+    raise_safety_alert,
+)
 from .utils import (
     build_straight_route,
     estimate_eta_minutes,
@@ -194,6 +199,31 @@ def sos(request, pk):
     return JsonResponse(
         {"ok": True, "alert_id": alert.id, "contacts_notified": notified}
     )
+
+
+@login_required
+@require_POST
+def report_deviation(request, pk):
+    """Client-detected route deviation → record + notify (deduped)."""
+    ride = get_object_or_404(Ride, pk=pk)
+    if not (ride.rider_id == request.user.id or ride.driver_id == request.user.id):
+        return JsonResponse({"error": "forbidden"}, status=403)
+    lat = request.POST.get("lat") or None
+    lng = request.POST.get("lng") or None
+    dist = request.POST.get("distance")
+    try:
+        dist_m = int(float(dist)) if dist else None
+    except ValueError:
+        dist_m = None
+    msg = (
+        f"Vehicle is {dist_m} m off the planned route."
+        if dist_m else "Vehicle has deviated from the planned route."
+    )
+    alert = raise_safety_alert(
+        ride, EmergencyAlert.Kind.ROUTE_DEVIATION, msg,
+        float(lat) if lat else None, float(lng) if lng else None,
+    )
+    return JsonResponse({"ok": True, "alert_id": alert.id})
 
 
 @login_required

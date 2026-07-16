@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 {% block title %}Live Tracking — SafeDrive{% endblock %}
-<<<<<<< HEAD
+
 {% block head %}
 <style>
   .stepper { display:flex; align-items:flex-start; margin-bottom:22px; padding:18px 14px;
@@ -25,21 +25,15 @@
   @keyframes pulse { 0%,100% { box-shadow:0 0 0 4px rgba(25,195,125,.16); } 50% { box-shadow:0 0 0 8px rgba(25,195,125,.08); } }
 </style>
 {% endblock %}
-=======
->>>>>>> 3b4da265b9e6343f66681dd946ef6089191e86dd
 {% block content %}
 <div class="flex-between mb">
   <div>
     <h2 style="margin:0">{{ ride.pickup_location }} → {{ ride.destination }}</h2>
-<<<<<<< HEAD
+
     <p class="muted" style="margin:4px 0 0" id="ride-status-text">
       {% if ride.eta_minutes %}ETA ~{{ ride.eta_minutes }} min{% endif %}
     </p>
     <span id="ride-status" style="display:none">{{ ride.status }}</span>
-=======
-    <p class="muted">Status: <strong id="ride-status">{{ ride.get_status_display }}</strong>
-      {% if ride.eta_minutes %}· ETA ~{{ ride.eta_minutes }} min{% endif %}</p>
->>>>>>> 3b4da265b9e6343f66681dd946ef6089191e86dd
   </div>
   <div class="row">
     {% if is_driver %}
@@ -51,6 +45,9 @@
     {% else %}
       <a class="btn btn-outline" href="{% url 'rides:shared_trip' ride.share_token %}" target="_blank">🔗 Share trip</a>
       <a class="btn btn-outline" href="{% url 'rides:report_ride' ride.pk %}">Report</a>
+      {% if ride.is_active %}
+      <button type="button" class="btn btn-outline" id="demo-deviate" title="Demo: push the vehicle off-route to see the safety alert">⚠ Test off-route</button>
+      {% endif %}
       {% if ride.status == 'requested' or ride.status == 'accepted' or ride.status == 'ongoing' %}
       <button type="button" class="btn btn-danger" id="cancel-open">Cancel ride</button>
       {% endif %}
@@ -58,7 +55,7 @@
   </div>
 </div>
 
-<<<<<<< HEAD
+
 <div class="stepper" id="ride-stepper">
   <div class="step" data-step="requested"><span class="line"></span><span class="dot">1</span><span class="label">Requested</span></div>
   <div class="step" data-step="accepted"><span class="line"></span><span class="dot">2</span><span class="label">Driver on the way</span></div>
@@ -66,8 +63,6 @@
   <div class="step" data-step="completed"><span class="line"></span><span class="dot">✓</span><span class="label">Completed</span></div>
 </div>
 
-=======
->>>>>>> 3b4da265b9e6343f66681dd946ef6089191e86dd
 {% if not is_driver %}
 <!-- Cancel modal -->
 <div id="cancel-modal" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.6);
@@ -102,6 +97,7 @@
 </div>
 {% endif %}
 
+<div id="deviation-banner" class="card" style="display:none;border-color:var(--danger);background:rgba(235,77,75,.14);margin-bottom:14px;font-weight:600"></div>
 <div id="alert-banner" class="card" style="display:none;border-color:var(--danger);background:rgba(255,71,87,.12);margin-bottom:14px"></div>
 
 <div class="grid grid-2">
@@ -143,7 +139,7 @@
 
 {% block scripts %}
 <script>
-<<<<<<< HEAD
+
   (function () {
     const order = ["requested", "accepted", "ongoing", "completed"];
     const steps = [...document.querySelectorAll("#ride-stepper .step")];
@@ -180,8 +176,6 @@
   })();
 </script>
 <script>
-=======
->>>>>>> 3b4da265b9e6343f66681dd946ef6089191e86dd
   window.RIDE_CONFIG = {
     rideId: {{ ride.pk }},
     wsScheme: location.protocol === "https:" ? "wss" : "ws",
@@ -193,6 +187,8 @@
     destination: { lat: {{ ride.destination_lat }}, lng: {{ ride.destination_lng }} },
     rebookUrl: "{% url 'rides:request_ride' %}",
     rateUrl: "{% url 'rides:rate' ride.pk %}",
+    deviationUrl: "{% url 'rides:report_deviation' ride.pk %}",
+    csrf: "{{ csrf_token }}",
     simulate: {% if not is_driver and ride.is_active %}true{% else %}false{% endif %},
   };
 </script>
@@ -214,6 +210,12 @@
     modal.addEventListener("click", (e) => { if (e.target === modal) modal.style.display = "none"; });
     if (reason) reason.addEventListener("change", () => {
       otherWrap.style.display = reason.value === "Other" ? "block" : "none";
+    });
+
+    // Demo: trigger a route deviation so the safety alert is visible.
+    const demoBtn = document.getElementById("demo-deviate");
+    if (demoBtn) demoBtn.addEventListener("click", () => {
+      if (window.SafeDriveMap && window.SafeDriveMap.demoDeviate) window.SafeDriveMap.demoDeviate();
     });
   })();
 </script>
